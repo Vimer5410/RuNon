@@ -1,0 +1,58 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.SignalR.Client
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<div>Статус подключения: @hubConnection?.State</div>
+<h3>@msg</h3>
+<h3>Ваш ConnectionId: @test</h3>
+<textarea @bind="messagetext">Напишите сообщение:</textarea>
+<textarea @bind="clientID">Впишите ID:</textarea>
+
+<button @onclick="SendTestMessage">Отправить сообщение</button>
+
+@code {
+    private HubConnection? hubConnection;
+    public string msg;
+    public string test;
+    public string clientID;
+    public string messagetext;
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/simplehub"))
+            .Build();
+        await hubConnection.StartAsync();
+        
+        hubConnection.On<string>("ReceiveMessage", (message) => 
+        {
+            InvokeAsync(() =>
+            {
+                msg = message;
+            }); 
+            Console.WriteLine($"Received: {message}");
+        });
+        
+        
+        clientID= hubConnection.ConnectionId;
+        test = hubConnection.ConnectionId;
+    }
+    
+    private async Task SendTestMessage()
+    {
+        if (hubConnection?.State == HubConnectionState.Connected)
+        {
+            Console.WriteLine($"Sending to: {clientID}, Message: {messagetext}");
+            try
+            {
+                await hubConnection.InvokeAsync("SendToClient",clientID,messagetext);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+            
+        }
+    }
+}

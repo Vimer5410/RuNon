@@ -1,0 +1,78 @@
+﻿@page "/test"
+@using Microsoft.AspNetCore.SignalR.Client
+@implements IAsyncDisposable
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+<div>
+    <input @bind="message" placeholder="Ваше сообщение" />
+    <button @onclick="SendToAll">Отправить всем</button>
+    <button @onclick="SendToGroup">Отправить в группу</button>
+</div>
+
+<div>
+    <h3>Сообщения:</h3>
+    @foreach (var msg in messages)
+    {
+        <p>@msg</p>
+    }
+</div>
+
+@code {
+    private HubConnection? hubConnection;
+    private List<string> messages = new();
+    private string message = "";
+    private string groupName = "test-group";
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Создаем подключение
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/chathub"))
+            .Build();
+        
+        // Подписываемся на получение сообщений
+        hubConnection.On<string>("ReceiveMessage", (msg) =>
+        {
+            messages.Add($"Всем: {msg}");
+            StateHasChanged(); // Обновляем интерфейс
+        });
+        
+        hubConnection.On<string>("ReceiveGroupMessage", (msg) =>
+        {
+            messages.Add($"Группа: {msg}");
+            StateHasChanged();
+        });
+        
+        // Запускаем подключение
+        await hubConnection.StartAsync();
+        
+        // Входим в группу
+        await hubConnection.InvokeAsync("JoinGroup", groupName);
+    }
+    
+    private async Task SendToAll()
+    {
+        if (hubConnection != null && !string.IsNullOrWhiteSpace(message))
+        {
+            await hubConnection.InvokeAsync("SendToAll", message);
+            message = "";
+        }
+    }
+    
+    private async Task SendToGroup()
+    {
+        if (hubConnection != null && !string.IsNullOrWhiteSpace(message))
+        {
+            await hubConnection.InvokeAsync("SendToGroup", groupName, message);
+            message = "";
+        }
+    }
+    
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection != null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+}
