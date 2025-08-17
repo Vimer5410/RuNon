@@ -8,7 +8,8 @@
     ".NETCoreApp,Version=v9.0": {
       "RuNon-Client/1.0.0": {
         "dependencies": {
-          "Microsoft.AspNetCore.SignalR.Client": "7.0.20"
+          "Microsoft.AspNetCore.SignalR.Client": "7.0.20",
+          "Microsoft.AspNetCore.SignalR.Client.Core": "7.0.20"
         },
         "runtime": {
           "RuNon-Client.dll": {}

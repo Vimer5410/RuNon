@@ -3,24 +3,103 @@
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
 
-<div>Статус подключения: @hubConnection?.State</div>
-<h3>@msg</h3>
-<h3>Ваш ConnectionId: @test</h3>
-<textarea @bind="messagetext">Напишите сообщение:</textarea>
-<textarea @bind="clientID">Впишите ID:</textarea>
 
-<button @onclick="SendTestMessage">Отправить сообщение</button>
+<div class="chat-container">
+    <div class="status-panel">
+        <div class="status-indicator">
+            <span class="status-dot"></span>
+            Статус подключения: @hubConnection?.State
+        </div>
+        <div class="client-id">
+            <span class="icon-user">👤</span>
+            Ваш ConnectionId: @yourClientID
+        </div>
+    </div>
 
+    <div class="chat-window">
+        <div class="chat-header">
+            <h3>💬 Окно чата</h3>
+            <div class="chat-status">Активен</div>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            @if (receiveUserMessage != null && receiveUserMessage.Any())
+            {
+                foreach (var receiveMsg in receiveUserMessage )
+                {
+                    if (receiveMsg.isMine)
+                    {
+                        <div class="message-item : message-sent">
+                            <div class="message-bubble-chat">
+                                <div class="message-text">@receiveMsg.message</div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="message-item : message-received">
+                            <div class="message-bubble-chat">
+                                <div class="message-text">@receiveMsg.message</div>
+                            </div>
+                        </div>
+                    }
+                }
+            }
+            else
+            {
+                <div class="empty-chat">
+                    <div class="empty-icon">💭</div>
+                    <div class="empty-text">Начните беседу...</div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="input-section">
+        <div class="input-group">
+            <label class="input-label">Ваше сообщение:</label>
+            <textarea 
+                @bind="messagetext" 
+                class="message-input" 
+                placeholder="Напишите сообщение...">
+            </textarea>
+        </div>
+
+        <div class="input-group">
+            <label class="input-label">ID получателя:</label>
+            <textarea 
+                @bind="interviewerСlientID" 
+                class="id-input" 
+                placeholder="Впишите ID получателя...">
+            </textarea>
+        </div>
+
+        <button 
+            @onclick="SendTestMessage" 
+            class="send-button"
+            disabled="@(hubConnection?.State != HubConnectionState.Connected)">
+            <span class="button-icon">📨</span>
+            Отправить сообщение
+        </button>
+    </div>
+</div>
 @code {
-    private HubConnection? hubConnection;
-    public string msg;
-    public string test;
-    public string clientID;
+    private HubConnection? hubConnection;   
+    public List<(string message, bool isMine)> receiveUserMessage = new List<(string message, bool isMine)>();
+    public string yourClientID;
+    public string interviewerСlientID;
     public string messagetext;
+    List<TimeSpan> reconnectTime = new List<TimeSpan>();
     protected override async Task OnInitializedAsync()
     {
+        
+        for (int i = 0; i < 3; i++)
+        {
+            reconnectTime.Add(TimeSpan.FromSeconds(i*5));
+        }
+        
         hubConnection = new HubConnectionBuilder()
             .WithUrl(Navigation.ToAbsoluteUri("/simplehub"))
+            .WithAutomaticReconnect(reconnectTime.ToArray())
             .Build();
         await hubConnection.StartAsync();
         
@@ -28,24 +107,27 @@
         {
             InvokeAsync(() =>
             {
-                msg = message;
+                receiveUserMessage.Add((message,false)) ;
+                Console.WriteLine($"Received: {message}");
+                StateHasChanged();
             }); 
-            Console.WriteLine($"Received: {message}");
         });
+
         
         
-        clientID= hubConnection.ConnectionId;
-        test = hubConnection.ConnectionId;
+        interviewerСlientID= hubConnection.ConnectionId;
+        yourClientID = hubConnection.ConnectionId;
     }
     
     private async Task SendTestMessage()
     {
+        receiveUserMessage.Add((messagetext,true));  //вот эта строчка
+        
         if (hubConnection?.State == HubConnectionState.Connected)
         {
-            Console.WriteLine($"Sending to: {clientID}, Message: {messagetext}");
             try
             {
-                await hubConnection.InvokeAsync("SendToClient",clientID,messagetext);
+                await hubConnection.InvokeAsync("SendToClient",interviewerСlientID,messagetext);
             }
             catch (Exception e)
             {
