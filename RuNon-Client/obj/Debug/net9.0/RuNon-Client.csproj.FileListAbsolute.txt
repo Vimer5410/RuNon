@@ -69,8 +69,6 @@ C:\Users\Asus\source\C#\RuNon\RuNon-Client\obj\Debug\net9.0\compressed\96tf60y31
 C:\Users\Asus\source\C#\RuNon\RuNon-Client\obj\Debug\net9.0\compressed\zhsf6myt42-h1s4sie4z3.gz
 C:\Users\Asus\source\C#\RuNon\RuNon-Client\obj\Debug\net9.0\compressed\68c27cllia-4d85u1mtcx.gz
 C:\Users\Asus\source\C#\RuNon\RuNon-Client\obj\Debug\net9.0\compressed\teivw3xzsg-0j3bgjxly4.gz
-C:\Users\Asus\source\C#\RuNon\RuNon-Client\obj\Debug\net9.0\compressed\w882hfwgee-x9fsd12ccr.gz
-C:\Users\Asus\source\C#\RuNon\RuNon-Client\obj\Debug\net9.0\compressed\plzzxn5edl-x9fsd12ccr.gz
 C:\Users\Asus\source\C#\RuNon\RuNon-Client\obj\Debug\net9.0\staticwebassets.build.json
 C:\Users\Asus\source\C#\RuNon\RuNon-Client\obj\Debug\net9.0\staticwebassets.build.json.cache
 C:\Users\Asus\source\C#\RuNon\RuNon-Client\obj\Debug\net9.0\staticwebassets.development.json
@@ -166,3 +164,7 @@ C:\Users\glebd\Projects\C#\RuNon\RuNon-Client\obj\Debug\net9.0\ref\RuNon-Client.
 C:\Users\glebd\Projects\C#\RuNon\RuNon-Client\obj\Debug\net9.0\scopedcss\Components\Pages\Home.razor.rz.scp.css
 C:\Users\glebd\Projects\C#\RuNon\RuNon-Client\obj\Debug\net9.0\compressed\w882hfwgee-0mcsmp6emi.gz
 C:\Users\glebd\Projects\C#\RuNon\RuNon-Client\obj\Debug\net9.0\compressed\plzzxn5edl-0mcsmp6emi.gz
+C:\Users\Asus\source\C#\RuNon\RuNon-Client\obj\Debug\net9.0\RuNon-Client.sourcelink.json
+C:\Users\Asus\source\C#\RuNon\RuNon-Client\obj\Debug\net9.0\scopedcss\Components\Pages\Home.razor.rz.scp.css
+C:\Users\Asus\source\C#\RuNon\RuNon-Client\obj\Debug\net9.0\compressed\w882hfwgee-0mcsmp6emi.gz
+C:\Users\Asus\source\C#\RuNon\RuNon-Client\obj\Debug\net9.0\compressed\plzzxn5edl-0mcsmp6emi.gz

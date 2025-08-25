@@ -1,5 +1,6 @@
 using RuNon_Client.Components;
 using RuNon_Client.Hubs;
+using RuNon_Client.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddSignalR();
+builder.Services.AddSingleton<EncryptionService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

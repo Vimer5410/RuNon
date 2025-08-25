@@ -1,25 +1,31 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\glebd\\Projects\\C#\\RuNon\\RuNon-Server\\RuNon-Server.csproj": {}
+    "C:\\Users\\Asus\\source\\C#\\RuNon\\RuNon-Server\\RuNon-Server.csproj": {}
   },
   "projects": {
-    "C:\\Users\\glebd\\Projects\\C#\\RuNon\\RuNon-Server\\RuNon-Server.csproj": {
+    "C:\\Users\\Asus\\source\\C#\\RuNon\\RuNon-Server\\RuNon-Server.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\glebd\\Projects\\C#\\RuNon\\RuNon-Server\\RuNon-Server.csproj",
+        "projectUniqueName": "C:\\Users\\Asus\\source\\C#\\RuNon\\RuNon-Server\\RuNon-Server.csproj",
         "projectName": "RuNon-Server",
-        "projectPath": "C:\\Users\\glebd\\Projects\\C#\\RuNon\\RuNon-Server\\RuNon-Server.csproj",
-        "packagesPath": "C:\\Users\\glebd\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\glebd\\Projects\\C#\\RuNon\\RuNon-Server\\obj\\",
+        "projectPath": "C:\\Users\\Asus\\source\\C#\\RuNon\\RuNon-Server\\RuNon-Server.csproj",
+        "packagesPath": "C:\\Users\\Asus\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Asus\\source\\C#\\RuNon\\RuNon-Server\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "C:\\Users\\glebd\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\Asus\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -54,30 +60,12 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
-          "downloadDependencies": [
-            {
-              "name": "Microsoft.AspNetCore.App.Ref",
-              "version": "[8.0.19, 8.0.19]"
-            },
-            {
-              "name": "Microsoft.NETCore.App.Host.win-x64",
-              "version": "[8.0.19, 8.0.19]"
-            },
-            {
-              "name": "Microsoft.NETCore.App.Ref",
-              "version": "[8.0.19, 8.0.19]"
-            },
-            {
-              "name": "Microsoft.WindowsDesktop.App.Ref",
-              "version": "[8.0.19, 8.0.19]"
-            }
-          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.301/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
