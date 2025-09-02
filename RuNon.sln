@@ -2,8 +2,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RuNon-Client", "RuNon-Client\RuNon-Client.csproj", "{C657C4DB-B545-4D97-8103-C825F9780162}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RuNon-Server", "RuNon-Server\RuNon-Server.csproj", "{396090B9-B78C-4EEF-950A-875AD3C3DF88}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -14,9 +12,5 @@ Global
 		{C657C4DB-B545-4D97-8103-C825F9780162}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C657C4DB-B545-4D97-8103-C825F9780162}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C657C4DB-B545-4D97-8103-C825F9780162}.Release|Any CPU.Build.0 = Release|Any CPU
-		{396090B9-B78C-4EEF-950A-875AD3C3DF88}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{396090B9-B78C-4EEF-950A-875AD3C3DF88}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{396090B9-B78C-4EEF-950A-875AD3C3DF88}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{396090B9-B78C-4EEF-950A-875AD3C3DF88}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

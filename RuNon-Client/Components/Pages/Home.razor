@@ -1,7 +1,11 @@
 ﻿@page "/"
 @using Microsoft.AspNetCore.SignalR.Client
 @using System.Security.Cryptography
+@using System.Text
+@using System.Net
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @inject NavigationManager Navigation
+@inject ProtectedLocalStorage _protectedLocalStorage
 @rendermode InteractiveServer
 
 
@@ -90,7 +94,12 @@
     public string interviewerСlientID;
     public string messagetext;
     public byte[]? publicKeyFromServer;
+    public string userIp = "";
+    
+    
     List<TimeSpan> reconnectTime = new List<TimeSpan>();
+    RSA _rsa;
+    
     protected override async Task OnInitializedAsync()
     {
         
@@ -103,16 +112,43 @@
             .WithUrl(Navigation.ToAbsoluteUri("/simplehub"))
             .WithAutomaticReconnect(reconnectTime.ToArray())
             .Build();
+        
+        _rsa = RSA.Create(1024);
+        
         await hubConnection.StartAsync();
         
-        hubConnection.On<string>("ReceiveMessage", (message) => 
+        hubConnection.On<byte[], byte[], byte[]>("ReceiveMessage", (encryptedMessage, encryptedAesKey, aesIV) => 
         {
             InvokeAsync(() =>
             {
-                receiveUserMessage.Add((message,false)) ;
-                Console.WriteLine($"Received: {message}");
-                StateHasChanged();
+                try
+                {
+                    var aesKey = _rsa.Decrypt(encryptedAesKey, RSAEncryptionPadding.OaepSHA256);
+                    
+                    var decryptedMessage = Decrypt(encryptedMessage, aesKey, aesIV);
+                    
+                    receiveUserMessage.Add((decryptedMessage, false));
+                    Console.WriteLine($"Received: {decryptedMessage}");
+                    StateHasChanged();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error decrypting message: {ex.Message}");
+                }
             }); 
+        });
+
+        hubConnection.On<string>("ReceiveUserIp", (UserIp) =>
+        {
+            InvokeAsync(() =>
+            {
+                userIp = UserIp;
+                if (userIp=="::1")
+                {
+                    userIp = "127.0.0.1";
+                }
+            });
+            
         });
         
         hubConnection.On<string>("ReceivePublicKey", (publicKey) => 
@@ -124,13 +160,28 @@
                 StateHasChanged();
             }); 
         });
-
-        
         
         interviewerСlientID= hubConnection.ConnectionId;
         yourClientID = hubConnection.ConnectionId;
+        
+        await hubConnection.InvokeAsync("GetPublicKey");
+        
+        await hubConnection.InvokeAsync("GetUserIp");
+        
+        var rsaPublicKey = _rsa.ExportRSAPublicKey();
+        
+        await hubConnection.InvokeAsync("ReceiveRSAkey", rsaPublicKey);
+        
     }
-    
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CreateOrIdentify();
+        }
+    }
+
     private async Task SendTestMessage()
     {
         receiveUserMessage.Add((messagetext,true));  
@@ -139,31 +190,55 @@
         {
             try
             {
-                await hubConnection.InvokeAsync("GetPublicKey");
                 using (Aes aes=Aes.Create())
                 {
                     var AesKey = aes.Key;
                     var AesIV = aes.IV;
                     var EncryptMsg = Encrypt(messagetext, AesKey, AesIV);
-                    await hubConnection.InvokeAsync("SendToClient",interviewerСlientID,EncryptMsg);
+                    
+                    while (publicKeyFromServer==null)
+                    {
+                        await Task.Delay(100);
+                    }
                     using (RSA rsa = RSA.Create())
                     {
                         rsa.ImportRSAPublicKey(publicKeyFromServer,  out _);
                         var AesKeyEncryptedbyRsa = rsa.Encrypt(AesKey, RSAEncryptionPadding.OaepSHA256);
-                        await hubConnection.InvokeAsync("ReceiveEncodeMsg", EncryptMsg, AesKeyEncryptedbyRsa);
+                        await hubConnection.InvokeAsync("SendToClient", interviewerСlientID, EncryptMsg, AesKeyEncryptedbyRsa, AesIV);
                     }
                 }
-                
-                
             }
             catch (Exception e)
             {
                 Console.WriteLine(e);
                 throw;
             }
-            
         }
         messagetext = "";
+    }
+    
+    public async Task CreateOrIdentify()
+    {
+        var userGuidLocalStorage = await _protectedLocalStorage.GetAsync<string>("user_id");
+        var userIpLocalStorage = await _protectedLocalStorage.GetAsync<string>("user_ip");
+        var clientIP = userIp;
+        var userGuid = Guid.NewGuid().ToString();
+        string sessionId = $"{clientIP}_{userGuidLocalStorage.Value}";
+        
+        if (String.IsNullOrEmpty(userGuidLocalStorage.Value) && String.IsNullOrEmpty(userIpLocalStorage.Value))
+        {
+            
+            _protectedLocalStorage.SetAsync("user_ip", clientIP);
+            _protectedLocalStorage.SetAsync("user_id",userGuid);
+            
+            sessionId = $"{clientIP}_{userGuid}";
+            Console.WriteLine($"Ваш SessionID:{sessionId}");
+        }
+        else
+        {
+            Console.WriteLine($"вы уже в системе: {sessionId}");
+        }
+        
     }
     
     
@@ -186,6 +261,30 @@
                     }
 
                     return ms.ToArray();
+                }
+            }
+        }
+    }
+    
+   
+    
+    public static string Decrypt(byte[] text, byte[] key, byte[] iv)
+    {
+        using (Aes aes=Aes.Create())
+        {
+            aes.Key = key;
+            aes.IV = iv;
+            using (ICryptoTransform decryptor=aes.CreateDecryptor(aes.Key,aes.IV))
+            {
+                using (MemoryStream ms=new MemoryStream(text))
+                {
+                    using (CryptoStream cs=new CryptoStream(ms, decryptor, CryptoStreamMode.Read))
+                    {
+                        using (StreamReader sr=new StreamReader(cs))
+                        {
+                            return sr.ReadToEnd();
+                        }
+                    }
                 }
             }
         }

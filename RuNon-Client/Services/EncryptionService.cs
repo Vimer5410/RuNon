@@ -12,13 +12,11 @@ public class EncryptionService
             _rsa = RSA.Create(1024); 
         }
         
-        // Отдаем публичный ключ клиенту
         public string GetPublicKey()
         {
             return Convert.ToBase64String(_rsa.ExportRSAPublicKey());
         }
         
-        // Расшифровываем AES ключ 
         public byte[] DecryptAESKey(string encryptedAESKey)
         {
             return _rsa.Decrypt(Convert.FromBase64String(encryptedAESKey), RSAEncryptionPadding.OaepSHA256);
