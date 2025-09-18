@@ -57,6 +57,10 @@
             "Microsoft.AspNetCore.SignalR.Client.Core": {
               "target": "Package",
               "version": "[7.0.20, )"
+            },
+            "Microsoft.Data.Sqlite": {
+              "target": "Package",
+              "version": "[9.0.9, )"
             }
           },
           "imports": [

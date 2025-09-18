@@ -4,89 +4,210 @@
 @using System.Text
 @using System.Net
 @using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using Microsoft.Data.Sqlite
 @inject NavigationManager Navigation
 @inject ProtectedLocalStorage _protectedLocalStorage
 @rendermode InteractiveServer
 
-
 <div class="chat-container">
-    <div class="status-panel">
-        <div class="status-indicator">
-            <span class="status-dot"></span>
-            Статус подключения: @hubConnection?.State
+    @* Заголовок приложения *@
+    <div class="header-section">
+        <h1 class="header-title">
+            <i class="fas fa-user-secret"></i>
+            Анонимный Чат
+        </h1>
+        <div class="header-subtitle">Найди собеседника по интересам</div>
+    </div>
+
+    @* Статус подключения *@
+    <div class="status-card">
+        <div class="connection-status">
+            @{
+                string statusClass = hubConnection?.State == HubConnectionState.Connected ? "status-connected" : 
+                                   hubConnection?.State == HubConnectionState.Connecting ? "status-connecting" : "status-disconnected";
+                string statusText = hubConnection?.State == HubConnectionState.Connected ? "Подключен" : 
+                                  hubConnection?.State == HubConnectionState.Connecting ? "Подключение..." : "Отключен";
+                string statusIcon = hubConnection?.State == HubConnectionState.Connected ? "fa-wifi" : 
+                                  hubConnection?.State == HubConnectionState.Connecting ? "fa-spinner fa-spin" : "fa-wifi-slash";
+            }
+            <div class="status-indicator @statusClass"></div>
+            <div class="status-info">
+                <i class="fas @statusIcon"></i>
+                <span>@statusText</span>
+            </div>
         </div>
-        <div class="client-id">
-            <span class="icon-user">👤</span>
-            Ваш ConnectionId: @yourClientID
+        
+        <div class="connection-info">
+            <div class="connection-label">
+                <i class="fas fa-id-card"></i>
+                Ваш ID: <code class="connection-id">@(yourClientID ?? "Не подключен")</code>
+            </div>
         </div>
     </div>
 
-    <div class="chat-window">
-        <div class="chat-header">
-            <h3>💬 Окно чата</h3>
-            <div class="chat-status">Активен</div>
+    @* Основная сетка с настройками и чатом *@
+    <div class="main-grid">
+        <div class="filters-panel">
+            <div class="panel-header">
+                <i class="fas fa-cog"></i>
+                <h3>Настройки чата</h3>
+            </div>
+            
+            <div class="filter-section">
+                <div class="section-title">Получатель</div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">ID получателя:</label>
+                    <textarea 
+                        @bind="interviewerСlientID" 
+                        class="filter-textarea" 
+                        placeholder="Введите ID получателя...">
+                    </textarea>
+                </div>
+            </div>
+
+            <div class="connection-details">
+                <div class="detail-item">
+                    <i class="fas fa-globe"></i>
+                    <span>IP: @userIp</span>
+                </div>
+                <div class="detail-item">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Шифрование: @(publicKeyFromServer != null ? "Активно" : "Ожидание...")</span>
+                </div>
+            </div>
         </div>
-        <div class="chat-messages" id="chatMessages">
-            @if (receiveUserMessage != null && receiveUserMessage.Any())
-            {
-                foreach (var receiveMsg in receiveUserMessage )
+
+        @* Основная область чата *@
+        <div class="chat-area">
+            <div class="chat-header">
+                <div class="chat-title">
+                    <i class="fas fa-comments"></i>
+                    <span>Окно чата</span>
+                </div>
+                <div class="chat-status-badge">
+                    @(hubConnection?.State == HubConnectionState.Connected ? "Активен" : "Неактивен")
+                </div>
+            </div>
+
+            @* Область сообщений *@
+            <div class="messages-area" id="chatMessages">
+                @if (receiveUserMessage != null && receiveUserMessage.Any())
                 {
-                    if (receiveMsg.isMine)
+                    @foreach (var receiveMsg in receiveUserMessage)
                     {
-                        <div class="message-item : message-sent">
-                            <div class="message-bubble-chat">
-                                <div class="message-text">@receiveMsg.message</div>
+                        <div class="message @(receiveMsg.isMine ? "my-message" : "partner-message")">
+                            <div class="message-content">
+                                @receiveMsg.message
                             </div>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="message-item : message-received">
-                            <div class="message-bubble-chat">
-                                <div class="message-text">@receiveMsg.message</div>
+                            <div class="message-time">
+                                @DateTime.Now.ToString("HH:mm")
                             </div>
                         </div>
                     }
                 }
-            }
-            else
-            {
-                <div class="empty-chat">
-                    <div class="empty-icon">💭</div>
-                    <div class="empty-text">Начните беседу...</div>
+                else
+                {
+                    <div class="no-chat-state">
+                        <div class="no-chat-icon">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <div class="no-chat-title">Начните беседу</div>
+                        <div class="no-chat-description">
+                            Введите ID получателя и отправьте первое сообщение
+                        </div>
+                    </div>
+                }
+            </div>
+
+            @* Поле ввода сообщения *@
+            <div class="message-input-area">
+                <div class="input-group">
+                    <textarea 
+                        @bind="messagetext" 
+                        class="message-input" 
+                        placeholder="Введите сообщение..."
+                        rows="1">
+                    </textarea>
+                    <button 
+                        @onclick="SendTestMessage" 
+                        class="send-btn"
+                        disabled="@(hubConnection?.State != HubConnectionState.Connected || isUserBanned)">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
                 </div>
-            }
+            </div>
         </div>
-    </div>
-
-    <div class="input-section">
-        <div class="input-group">
-            <label class="input-label">Ваше сообщение:</label>
-            <textarea 
-                @bind="messagetext" 
-                class="message-input" 
-                placeholder="Напишите сообщение...">
-            </textarea>
-        </div>
-
-        <div class="input-group">
-            <label class="input-label">ID получателя:</label>
-            <textarea 
-                @bind="interviewerСlientID" 
-                class="id-input" 
-                placeholder="Впишите ID получателя...">
-            </textarea>
-        </div>
-
-        <button 
-            @onclick="SendTestMessage" 
-            class="send-button"
-            disabled="@(hubConnection?.State != HubConnectionState.Connected)">
-            <span class="button-icon">📨</span>
-            Отправить сообщение
-        </button>
     </div>
 </div>
+
+
+@if (isUserBanned)
+{
+    <div class="ban-system-overlay">
+        <div class="ban-system-modal">
+            <div class="ban-system-header">
+                <div class="ban-system-icon">
+                    <i class="fas fa-ban"></i>
+                </div>
+                <h2 class="ban-system-title">Доступ ограничен</h2>
+                <div class="ban-system-subtitle">Ваш аккаунт был заблокирован администрацией</div>
+            </div>
+            
+            <div class="ban-system-content">
+                <div class="ban-system-info-card">
+                    <div class="ban-system-detail">
+                        <div class="ban-system-detail-label">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Причина блокировки:
+                        </div>
+                        <div class="ban-system-detail-value">Нарушение правил сообщества</div>
+                    </div>
+                    
+                    <div class="ban-system-detail">
+                        <div class="ban-system-detail-label">
+                            <i class="fas fa-clock"></i>
+                            Дата блокировки:
+                        </div>
+                        <div class="ban-system-detail-value">-----</div>
+                    </div>
+                    
+                    <div class="ban-system-detail">
+                        <div class="ban-system-detail-label">
+                            <i class="fas fa-id-card"></i>
+                            Ваш ID:
+                        </div>
+                        <div class="ban-system-detail-value">@yourClientID</div>
+                    </div>
+                </div>
+                
+                <div class="ban-system-message">
+                    <p>К сожалению, вы не можете участвовать в чате. Если считаете, что это ошибка, обратитесь в техподдержку.</p>
+                </div>
+                
+                <div class="ban-system-actions">
+                    <button class="ban-system-btn ban-system-secondary" @onclick="BanReboot_Btn">
+                        <i class="fas fa-sync-alt"></i>
+                        Перезагрузить
+                    </button>
+                    <button class="ban-system-btn ban-system-primary" @onclick="BanSendTechSupport_Btn">
+                        <i class="fas fa-headset"></i>
+                        Техподдержка
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* Toast уведомление *@
+<div class="toast-container @(ShowToast ? "show" : "")">
+    <div class="toast-message">
+        <i class="fas fa-check-circle"></i>
+        ✅ Ваша заявка принята
+    </div>
+</div>
+
 @code {
     private HubConnection? hubConnection;   
     public List<(string message, bool isMine)> receiveUserMessage = new List<(string message, bool isMine)>();
@@ -94,15 +215,15 @@
     public string interviewerСlientID;
     public string messagetext;
     public byte[]? publicKeyFromServer;
+    public bool isUserBanned;
+    public bool ShowToast;
     public string userIp = "";
-    
     
     List<TimeSpan> reconnectTime = new List<TimeSpan>();
     RSA _rsa;
     
     protected override async Task OnInitializedAsync()
     {
-        
         for (int i = 0; i < 3; i++)
         {
             reconnectTime.Add(TimeSpan.FromSeconds(i*5));
@@ -124,9 +245,7 @@
                 try
                 {
                     var aesKey = _rsa.Decrypt(encryptedAesKey, RSAEncryptionPadding.OaepSHA256);
-                    
                     var decryptedMessage = Decrypt(encryptedMessage, aesKey, aesIV);
-                    
                     receiveUserMessage.Add((decryptedMessage, false));
                     Console.WriteLine($"Received: {decryptedMessage}");
                     StateHasChanged();
@@ -148,7 +267,6 @@
                     userIp = "127.0.0.1";
                 }
             });
-            
         });
         
         hubConnection.On<string>("ReceivePublicKey", (publicKey) => 
@@ -165,13 +283,10 @@
         yourClientID = hubConnection.ConnectionId;
         
         await hubConnection.InvokeAsync("GetPublicKey");
-        
         await hubConnection.InvokeAsync("GetUserIp");
         
         var rsaPublicKey = _rsa.ExportRSAPublicKey();
-        
         await hubConnection.InvokeAsync("ReceiveRSAkey", rsaPublicKey);
-        
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -179,14 +294,15 @@
         if (firstRender)
         {
             await CreateOrIdentify();
+            StateHasChanged();
         }
     }
 
     private async Task SendTestMessage()
     {
-        receiveUserMessage.Add((messagetext,true));  
+        receiveUserMessage.Add((messagetext,true));
         
-        if (hubConnection?.State == HubConnectionState.Connected)
+        if (hubConnection?.State == HubConnectionState.Connected && !isUserBanned)
         {
             try
             {
@@ -204,6 +320,7 @@
                     {
                         rsa.ImportRSAPublicKey(publicKeyFromServer,  out _);
                         var AesKeyEncryptedbyRsa = rsa.Encrypt(AesKey, RSAEncryptionPadding.OaepSHA256);
+                        // смс образа --> encryptMSG AESkey AESIV
                         await hubConnection.InvokeAsync("SendToClient", interviewerСlientID, EncryptMsg, AesKeyEncryptedbyRsa, AesIV);
                     }
                 }
@@ -214,32 +331,132 @@
                 throw;
             }
         }
+        else
+        {
+            await hubConnection.DisposeAsync();
+        }
         messagetext = "";
+    }
+    
+    
+    
+    public async Task<bool> IsUserBanned(string ipAddress, string Guid)
+    {
+        var ipDbConnectionString = "Data Source=Banned_Ip.db"; 
+        var guidDbConnectionString = "Data Source=Banned_GUID.db";
+
+        using (SqliteConnection sqliteConnectionIp = new SqliteConnection(ipDbConnectionString))
+        {
+            await sqliteConnectionIp.OpenAsync();
+            var ipSelect = "SELECT COUNT(*) FROM Banned_Ip WHERE ip_address = @ip";
+            
+            using (var ipSelectCommand=new SqliteCommand(ipSelect, sqliteConnectionIp))
+            {
+                ipSelectCommand.Parameters.AddWithValue("@ip", ipAddress);
+                long res= (long)await ipSelectCommand.ExecuteScalarAsync();
+                
+                using (SqliteConnection sqliteConnectionGuid = new SqliteConnection(guidDbConnectionString))
+                {
+                    await sqliteConnectionGuid.OpenAsync();
+                    var guidSelect = "SELECT COUNT(*) FROM Banned_GUID WHERE guid = @guid";
+                    using (var guidSelectCommand=new SqliteCommand(guidSelect,sqliteConnectionGuid))
+                    {
+                        guidSelectCommand.Parameters.AddWithValue("@guid", Guid);
+                        res += (long)await guidSelectCommand.ExecuteScalarAsync();
+                    }
+                }
+                return res > 0;
+            }
+        }
     }
     
     public async Task CreateOrIdentify()
     {
         var userGuidLocalStorage = await _protectedLocalStorage.GetAsync<string>("user_id");
-        var userIpLocalStorage = await _protectedLocalStorage.GetAsync<string>("user_ip");
-        var clientIP = userIp;
         var userGuid = Guid.NewGuid().ToString();
-        string sessionId = $"{clientIP}_{userGuidLocalStorage.Value}";
         
-        if (String.IsNullOrEmpty(userGuidLocalStorage.Value) && String.IsNullOrEmpty(userIpLocalStorage.Value))
+        var ipDbConnectionString = "Data Source=Banned_Ip.db"; 
+        var guidDbConnectionString = "Data Source=Banned_GUID.db"; 
+        
+        SqliteConnection sqliteConnectionIp = new SqliteConnection(ipDbConnectionString);
+        SqliteConnection sqliteConnectionGuid = new SqliteConnection(guidDbConnectionString);
+        
+        await sqliteConnectionIp.OpenAsync();
+        await sqliteConnectionGuid.OpenAsync();
+        
+        var sqlCreateBannedIPTable = @"
+            CREATE TABLE IF NOT EXISTS Banned_Ip(
+                ip_address TEXT PRIMARY KEY
+                )";
+        
+        var sqlCreateBannedGUIDTable = @"
+            CREATE TABLE IF NOT EXISTS Banned_GUID(
+                guid TEXT PRIMARY KEY
+                )";
+        
+        SqliteCommand sqlCreateBannedIPTableCommand = new SqliteCommand(sqlCreateBannedIPTable, sqliteConnectionIp);
+        SqliteCommand sqlCreateBannedGUIDTableCommand = new SqliteCommand(sqlCreateBannedGUIDTable, sqliteConnectionGuid);
+        
+        await sqlCreateBannedIPTableCommand.ExecuteNonQueryAsync();
+        await sqlCreateBannedGUIDTableCommand.ExecuteNonQueryAsync();
+        
+        if (String.IsNullOrEmpty(userGuidLocalStorage.Value))
         {
-            
-            _protectedLocalStorage.SetAsync("user_ip", clientIP);
             _protectedLocalStorage.SetAsync("user_id",userGuid);
-            
-            sessionId = $"{clientIP}_{userGuid}";
-            Console.WriteLine($"Ваш SessionID:{sessionId}");
+            Console.WriteLine($"Обнаружен новый GUID: {userGuid}");
         }
-        else
-        {
-            Console.WriteLine($"вы уже в системе: {sessionId}");
-        }
-        
+        isUserBanned = await IsUserBanned(userIp, userGuidLocalStorage.Value);
+        var banNotify = isUserBanned ? "Пользователь забанен" : "Пользователь чист";
+        Console.WriteLine(banNotify);
     }
+    
+    
+
+    private async Task BanTechSupport()
+    {
+        var userGuidLocalStorage = await _protectedLocalStorage.GetAsync<string>("user_id");
+        var BannedUsersSupportConnectionString = "Data Source=Banned_Users_Support.db";
+        SqliteConnection BannedUsersSupporConnection = new SqliteConnection(BannedUsersSupportConnectionString);
+        await BannedUsersSupporConnection.OpenAsync();
+        var sqlCreateBannedUsersSupporTable = @"
+            CREATE TABLE IF NOT EXISTS Banned_Users_Support(
+                ip_address TEXT,
+                guid TEXT,
+                date TEXT
+                )";
+        var sqlInsertBannedUser = @"INSERT INTO Banned_Users_Support(ip_address, guid, date)
+                                  VALUES (@ip_address, @guid, @date)";
+        using (SqliteCommand BannedUsersSupporCreateTable = new SqliteCommand(sqlCreateBannedUsersSupporTable, BannedUsersSupporConnection))
+        {
+            await BannedUsersSupporCreateTable.ExecuteNonQueryAsync();
+        }
+
+        using (SqliteCommand sqlInsertBannedUserCommand = new SqliteCommand(sqlInsertBannedUser, BannedUsersSupporConnection))
+        {
+            sqlInsertBannedUserCommand.Parameters.AddWithValue("@ip_address", userIp);
+            sqlInsertBannedUserCommand.Parameters.AddWithValue("@guid", userGuidLocalStorage.Value ?? "uknow_guid");
+            sqlInsertBannedUserCommand.Parameters.AddWithValue("@date", DateTime.Now.ToString("G"));
+            sqlInsertBannedUserCommand.ExecuteNonQuery();
+        }
+    }
+    
+    
+    
+    private async Task BanReboot_Btn()
+    {
+        Navigation.NavigateTo("/");
+    }
+
+    private async Task BanSendTechSupport_Btn()
+    {
+        ShowToast = true;
+        StateHasChanged();
+        await Task.Delay(2000);
+        ShowToast = false;
+        await BanTechSupport();
+    }
+    
+    
     
     
     public static byte[] Encrypt(string text, byte[] key, byte[] iv)
@@ -259,14 +476,11 @@
                             sw.Write(text);
                         }
                     }
-
                     return ms.ToArray();
                 }
             }
         }
     }
-    
-   
     
     public static string Decrypt(byte[] text, byte[] key, byte[] iv)
     {
@@ -289,5 +503,78 @@
             }
         }
     }
-    
 }
+
+
+<style>
+    /* Глобальные стили, которые не работают в изолированном CSS */
+    :root {
+        --primary-color: #6366f1;
+        --primary-light: #818cf8;
+        --primary-dark: #4f46e5;
+        --secondary-color: #ec4899;
+        --success-color: #10b981;
+        --danger-color: #ef4444;
+        --warning-color: #f59e0b;
+        --bg-primary: #0f0f23;
+        --bg-secondary: #1a1a2e;
+        --bg-tertiary: #16213e;
+        --bg-accent: #2563eb;
+        --text-primary: #ffffff;
+        --text-secondary: #cbd5e1;
+        --text-muted: #64748b;
+        --border-color: #334155;
+        --border-light: #475569;
+        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+    }
+
+    body {
+        background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+        min-height: 100vh;
+        font-family: 'Inter', -apple-system, system-ui, sans-serif;
+        color: var(--text-primary);
+        margin: 0;
+        padding: 0;
+    }
+
+    
+    .toast-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        transform: translateX(400px);
+        transition: transform 0.3s ease;
+        z-index: 1001;
+    }
+
+    .toast-container.show {
+        transform: translateX(0);
+    }
+
+    .toast-message {
+        background: var(--success-color);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-weight: 600;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .ban-system-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+</style>

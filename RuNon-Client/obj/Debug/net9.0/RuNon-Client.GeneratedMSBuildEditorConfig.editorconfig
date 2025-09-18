@@ -24,20 +24,12 @@ build_property.EnableCodeStyleSeverity =
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBcHAucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Asus/source/C\#/RuNon/RuNon-Client/Components/Pages/Counter.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xDb3VudGVyLnJhem9y
-build_metadata.AdditionalFiles.CssScope = 
-
 [C:/Users/Asus/source/C\#/RuNon/RuNon-Client/Components/Pages/Error.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xFcnJvci5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/Asus/source/C\#/RuNon/RuNon-Client/Components/Pages/Test.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xUZXN0LnJhem9y
-build_metadata.AdditionalFiles.CssScope = 
-
-[C:/Users/Asus/source/C\#/RuNon/RuNon-Client/Components/Pages/Weather.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xXZWF0aGVyLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/Asus/source/C\#/RuNon/RuNon-Client/Components/Routes.razor]
@@ -51,10 +43,6 @@ build_metadata.AdditionalFiles.CssScope =
 [C:/Users/Asus/source/C\#/RuNon/RuNon-Client/Components/Layout/MainLayout.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcTWFpbkxheW91dC5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = b-bv1qjnzeqj
-
-[C:/Users/Asus/source/C\#/RuNon/RuNon-Client/Components/Layout/NavMenu.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcTmF2TWVudS5yYXpvcg==
-build_metadata.AdditionalFiles.CssScope = b-mjvxazb9ey
 
 [C:/Users/Asus/source/C\#/RuNon/RuNon-Client/Components/Pages/Home.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xIb21lLnJhem9y

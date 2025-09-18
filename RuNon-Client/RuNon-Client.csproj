@@ -11,6 +11,7 @@
     <ItemGroup>
       <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="7.0.20" />
       <PackageReference Include="Microsoft.AspNetCore.SignalR.Client.Core" Version="7.0.20" />
+      <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.9" />
     </ItemGroup>
 
 </Project>
