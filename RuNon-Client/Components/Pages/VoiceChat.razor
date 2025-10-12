@@ -1,0 +1,1981 @@
+﻿@page "/voice"
+@using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.JSInterop
+
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<div class="voice-chat-app">
+    <div class="app-header">
+        <h1 class="app-title">
+            <i class="fas fa-user-secret"></i>
+            Анонимный Голосовой Чат
+        </h1>
+        <div class="app-subtitle">Общайся голосом анонимно</div>
+    </div>
+
+    <div class="status-panel">
+        <div class="connection-status">
+            @{
+                var statusClass = "status-offline";
+                var statusText = "Отключен";
+                var statusIcon = "fa-wifi-slash";
+            }
+            <div class="status-dot @statusClass"></div>
+            <div class="status-text">
+                <i class="fas @statusIcon"></i>
+                <span>@statusText</span>
+            </div>
+        </div>
+        
+        <div class="user-info">
+            <div class="user-id">
+                <i class="fas fa-id-card"></i>
+                Ваш ID: <code class="id-value">@(connectionId ?? "Не подключен")</code>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="search-sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-search"></i>
+                <h3>Поиск собеседника</h3>
+            </div>
+            
+            <div class="filter-block">
+                <div class="block-title">Мои данные</div>
+                
+                <div class="filter-item">
+                    <label class="filter-name">Мой пол:</label>
+                    <div class="radio-buttons">
+                        <label class="radio-choice">
+                            <input type="radio" name="myGender" value="male" @onchange="@(e => myGender = e.Value?.ToString())">
+                            <span class="radio-dot"></span>
+                            <i class="fas fa-mars gender-symbol male"></i>
+                            Мужской
+                        </label>
+                        <label class="radio-choice">
+                            <input type="radio" name="myGender" value="female" @onchange="@(e => myGender = e.Value?.ToString())">
+                            <span class="radio-dot"></span>
+                            <i class="fas fa-venus gender-symbol female"></i>
+                            Женский
+                        </label>
+                    </div>
+                </div>
+
+                <div class="filter-item">
+                    <label class="filter-name">Мой возраст:</label>
+                    <select class="filter-dropdown" @bind="myAge">
+                        <option value="0">Выберите возраст</option>
+                        @for (int i = 16; i <= 60; i++)
+                        {
+                            <option value="@i">@i лет</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="filter-block">
+                <div class="block-title">Ищу собеседника</div>
+                
+                <div class="filter-item">
+                    <label class="filter-name">Пол собесеседника:</label>
+                    <div class="radio-buttons">
+                        <label class="radio-choice">
+                            <input type="radio" name="targetGender" value="any" checked="@(targetGender == "any")" @onchange="@(e => targetGender = e.Value?.ToString())">
+                            <span class="radio-dot"></span>
+                            <i class="fas fa-users gender-symbol any"></i>
+                            Любой
+                        </label>
+                        <label class="radio-choice">
+                            <input type="radio" name="targetGender" value="male" checked="@(targetGender == "male")" @onchange="@(e => targetGender = e.Value?.ToString())">
+                            <span class="radio-dot"></span>
+                            <i class="fas fa-mars gender-symbol male"></i>
+                            Мужской
+                        </label>
+                        <label class="radio-choice">
+                            <input type="radio" name="targetGender" value="female" checked="@(targetGender == "female")" @onchange="@(e => targetGender = e.Value?.ToString())">
+                            <span class="radio-dot"></span>
+                            <i class="fas fa-venus gender-symbol female"></i>
+                            Женский
+                        </label>
+                    </div>
+                </div>
+
+                <div class="filter-item">
+                    <label class="filter-name">Возраст собеседника:</label>
+                    <div class="age-selectors">
+                        <select class="filter-dropdown small" @bind="minAge">
+                            <option value="16">16+</option>
+                            @for (int i = 18; i <= 50; i += 2)
+                            {
+                                <option value="@i">@i+</option>
+                            }
+                        </select>
+                        <span class="age-dash">до</span>
+                        <select class="filter-dropdown small" @bind="maxAge">
+                            <option value="60">60</option>
+                            @for (int i = 20; i <= 60; i += 2)
+                            {
+                                <option value="@i">@i</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="search-buttons">
+                <button class="btn primary" @onclick="BeginSearch" disabled="@(!CanSearch())">
+                    <i class="fas fa-search"></i>
+                    Начать поиск
+                </button>
+                <button class="btn secondary" @onclick="EndSearch" disabled="@(!searchActive)">
+                    <i class="fas fa-stop"></i>
+                    Остановить
+                </button>
+            </div>
+
+            <div class="debug-section">
+                <button class="btn debug" @onclick="InitiateTestCall">
+                    <i class="fas fa-flask"></i>
+                    Тест звонка
+                </button>
+                @if (currentPartner != null)
+                {
+                    <div class="debug-actions">
+                        <button class="btn small" @onclick="SimulateVoice">
+                            <i class="fas fa-microphone"></i>
+                            Симулировать речь
+                        </button>
+                    </div>
+                }
+            </div>
+
+            @if (searchActive)
+            {
+                <div class="searching-indicator">
+                    <div class="searching-animation">
+                        <div class="searching-dot"></div>
+                        <div class="searching-dot"></div>
+                        <div class="searching-dot"></div>
+                    </div>
+                    <div class="searching-text">Ищем собеседника...</div>
+                </div>
+            }
+        </div>
+
+        <div class="voice-main">
+            @if (currentPartner != null)
+            {
+                <div class="call-info">
+                    <div class="partner-avatar @(partnerSpeaking ? "active" : "")">
+                        <i class="fas @(currentPartner.Gender == "male" ? "fa-mars" : currentPartner.Gender == "female" ? "fa-venus" : "fa-user")"></i>
+                    </div>
+                    <div class="partner-details">
+                        <div class="partner-name">Собеседник на связи</div>
+                        <div class="partner-info">
+                            @currentPartner.Gender, @currentPartner.Age лет
+                        </div>
+                    </div>
+                    <button class="end-call-btn" @onclick="HangUp" title="Завершить звонок">
+                        <i class="fas fa-phone-slash"></i>
+                    </button>
+                </div>
+
+                <div class="voice-display">
+                    <div class="call-time">
+                        <i class="fas fa-clock"></i>
+                        <span>@callTime</span>
+                    </div>
+
+                    <div class="sound-visualization">
+                        <canvas id="soundCanvas" width="400" height="400" style="display: @(enableAnimation ? "block" : "none")"></canvas>
+                        <div class="visual-center" style="display: @(enableAnimation ? "flex" : "none")">
+                            <div class="center-circle @(userSpeaking || partnerSpeaking ? "pulsing" : "")">
+                                <i class="fas @(userSpeaking ? "fa-microphone" : partnerSpeaking ? "fa-volume-up" : "fa-headphones")"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="static-view" style="display: @(enableAnimation ? "none" : "flex")">
+                            <div class="static-circles">
+                                <div class="static-ring ring-1"></div>
+                                <div class="static-ring ring-2"></div>
+                                <div class="static-ring ring-3"></div>
+                                <div class="static-ring ring-4"></div>
+                            </div>
+                            <div class="static-center">
+                                <div class="static-icon @(userSpeaking ? "user-talking" : partnerSpeaking ? "partner-talking" : "")">
+                                    <i class="fas @(userSpeaking ? "fa-microphone" : partnerSpeaking ? "fa-volume-up" : "fa-headphones")"></i>
+                                </div>
+                                @if (userSpeaking)
+                                {
+                                    <div class="status-label">Вы говорите</div>
+                                }
+                                else if (partnerSpeaking)
+                                {
+                                    <div class="status-label partner">Собеседник говорит</div>
+                                }
+                                else
+                                {
+                                    <div class="status-label waiting">На связи</div>
+                                }
+                            </div>
+                            <div class="static-lines">
+                                <div class="static-line line-a"></div>
+                                <div class="static-line line-b"></div>
+                                <div class="static-line line-c"></div>
+                                <div class="static-line line-d"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="talk-status" style="display: @(enableAnimation ? "block" : "none")">
+                        @if (userSpeaking)
+                        {
+                            <div class="status-message">
+                                <i class="fas fa-microphone"></i>
+                                Вы говорите...
+                            </div>
+                        }
+                        else if (partnerSpeaking)
+                        {
+                            <div class="status-message partner">
+                                <i class="fas fa-volume-up"></i>
+                                Собеседник говорит...
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="status-message quiet">
+                                <i class="fas fa-headphones"></i>
+                                Тишина...
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="control-panel">
+                    <div class="control-item">
+                        <button class="control-button @(micMuted ? "off" : "")" 
+                                @onclick="ToggleMic"
+                                title="@(micMuted ? "Включить микрофон" : "Выключить микрофон")">
+                            <i class="fas @(micMuted ? "fa-microphone-slash" : "fa-microphone")"></i>
+                        </button>
+                        <div class="control-name">Микрофон</div>
+                    </div>
+
+                    <div class="control-item">
+                        <button class="control-button hangup" 
+                                @onclick="HangUp"
+                                title="Завершить звонок">
+                            <i class="fas fa-phone-slash"></i>
+                        </button>
+                        <div class="control-name">Завершить</div>
+                    </div>
+
+                    <div class="control-item">
+                        <button class="control-button @(audioMuted ? "off" : "")" 
+                                @onclick="ToggleAudio"
+                                title="@(audioMuted ? "Включить звук" : "Выключить звук")">
+                            <i class="fas @(audioMuted ? "fa-volume-mute" : "fa-volume-up")"></i>
+                        </button>
+                        <div class="control-name">Звук</div>
+                    </div>
+                </div>
+
+                <div class="volume-panel">
+                    <div class="volume-control">
+                        <label class="volume-name">
+                            <i class="fas fa-microphone"></i>
+                            Громкость микрофона
+                        </label>
+                        <input type="range" 
+                               class="volume-slider" 
+                               min="0" 
+                               max="100" 
+                               @bind="micLevel"
+                               disabled="@micMuted">
+                        <span class="volume-percent">@micLevel%</span>
+                    </div>
+
+                    <div class="volume-control">
+                        <label class="volume-name">
+                            <i class="fas fa-volume-up"></i>
+                            Громкость собеседника
+                        </label>
+                        <input type="range" 
+                               class="volume-slider" 
+                               min="0" 
+                               max="100" 
+                               @bind="speakerLevel"
+                               disabled="@audioMuted">
+                        <span class="volume-percent">@speakerLevel%</span>
+                    </div>
+                </div>
+
+                <div class="display-settings">
+                    <div class="setting-option">
+                        <button class="setting-btn @(enableAnimation ? "on" : "")" 
+                                @onclick="SwitchAnimation"
+                                title="@(enableAnimation ? "Отключить анимацию" : "Включить анимацию")">
+                            <i class="fas @(enableAnimation ? "fa-waveform-lines" : "fa-image")"></i>
+                            <span>@(enableAnimation ? "Анимация включена" : "Статический режим")</span>
+                        </button>
+                        <div class="setting-desc">
+                            @if (enableAnimation)
+                            {
+                                <text>Динамическая визуализация звука</text>
+                            }
+                            else
+                            {
+                                <text>Статический рисунок (для отдыха глаз)</text>
+                            }
+                        </div>
+                    </div>
+                    
+                    @if (enableAnimation)
+                    {
+                        <div class="setting-option">
+                            <button class="setting-btn small @(showMicVisual ? "on" : "")" 
+                                    @onclick="SwitchMicVisual"
+                                    title="@(showMicVisual ? "Отключить визуализацию микрофона" : "Включить визуализацию микрофона")">
+                                <i class="fas @(showMicVisual ? "fa-eye" : "fa-eye-slash")"></i>
+                                <span>@(showMicVisual ? "Микрофон в анимации" : "Только собеседник в анимации")</span>
+                            </button>
+                        </div>
+                    }
+                </div>
+
+                <div class="call-stats">
+                    <div class="stat">
+                        <i class="fas fa-signal"></i>
+                        <span>Качество: <strong>@connectionStatus</strong></span>
+                    </div>
+                    <div class="stat">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Задержка: <strong>@ping мс</strong></span>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="no-call">
+                    <div class="no-call-icon">
+                        <i class="fas fa-phone-volume"></i>
+                    </div>
+                    <div class="no-call-title">Готов к разговору?</div>
+                    <div class="no-call-desc">
+                        Заполните фильтры поиска и нажмите "Начать поиск" чтобы найти собеседника для голосового общения
+                    </div>
+                    <div class="audio-tip">
+                        <i class="fas fa-info-circle"></i>
+                        Убедитесь, что ваш микрофон подключен и разрешен в браузере
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    // Пользовательские данные
+    private string myGender = "";
+    private int myAge = 0;
+    
+    // Критерии поиска
+    private string targetGender = "any";
+    private int minAge = 16;
+    private int maxAge = 60;
+    
+    // Состояние приложения
+    private bool searchActive = false;
+    private VoicePartner? currentPartner = null;
+    
+    // Настройки звука
+    private bool micMuted = false;
+    private bool audioMuted = false;
+    private int micLevel = 80;
+    private int speakerLevel = 80;
+    
+    // Визуальные эффекты
+    private bool userSpeaking = false;
+    private bool partnerSpeaking = false;
+    private bool enableAnimation = true;
+    private bool showMicVisual = true;
+    
+    // Информация о звонке
+    private string callTime = "00:00";
+    private string connectionStatus = "Отлично";
+    private int ping = 45;
+    
+    // Соединение
+    private string connectionId = "user-12345";
+    private bool connected = true;
+
+    // Таймеры
+    private Timer? callTimer;
+    private bool disposed = false;
+
+    public class VoicePartner
+    {
+        public string Id { get; set; } = "";
+        public string Gender { get; set; } = "";
+        public int Age { get; set; }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("setupSoundVisualizer");
+            
+            var netRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("registerNetReference", netRef);
+        }
+    }
+
+    [JSInvokable]
+    public async Task SetSpeakingState(bool speaking)
+    {
+        userSpeaking = speaking;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SwitchMicVisual()
+    {
+        showMicVisual = !showMicVisual;
+        await JS.InvokeVoidAsync("toggleMicDisplay", showMicVisual);
+    }
+
+    private async Task SwitchAnimation()
+    {
+        enableAnimation = !enableAnimation;
+        
+        if (enableAnimation && currentPartner != null)
+        {
+            await JS.InvokeVoidAsync("startSoundVisualizer");
+        }
+        else if (!enableAnimation)
+        {
+            await JS.InvokeVoidAsync("pauseVisualization");
+        }
+        
+        StateHasChanged();
+    }
+
+    private bool CanSearch()
+    {
+        return !string.IsNullOrEmpty(myGender) && 
+               myAge > 0 && 
+               !searchActive && 
+               currentPartner == null;
+    }
+
+    private async Task BeginSearch()
+    {
+        searchActive = true;
+        StateHasChanged();
+        await Task.Delay(2000);
+        searchActive = false;
+        StateHasChanged();
+    }
+
+    private async Task EndSearch()
+    {
+        searchActive = false;
+        StateHasChanged();
+    }
+
+    private async Task HangUp()
+    {
+        currentPartner = null;
+        micMuted = false;
+        audioMuted = false;
+        userSpeaking = false;
+        partnerSpeaking = false;
+        callTime = "00:00";
+        callTimer?.Dispose();
+        callTimer = null;
+        await JS.InvokeVoidAsync("stopSoundVisualizer");
+        StateHasChanged();
+    }
+
+    private void ToggleMic()
+    {
+        micMuted = !micMuted;
+        StateHasChanged();
+    }
+
+    private void ToggleAudio()
+    {
+        audioMuted = !audioMuted;
+        StateHasChanged();
+    }
+
+    private async Task InitiateTestCall()
+    {
+        currentPartner = new VoicePartner
+        {
+            Id = "test-123",
+            Gender = "female",
+            Age = 24
+        };
+
+        await JS.InvokeVoidAsync("startSoundVisualizer");
+
+        StartCallTimer();
+
+        _ = SimulateVoicePattern();
+
+        _ = SimulateNetworkStats();
+
+        StateHasChanged();
+    }
+
+    private void StartCallTimer()
+    {
+        var start = DateTime.Now;
+        callTimer = new Timer(async _ =>
+        {
+            if (disposed || currentPartner == null) return;
+            
+            var time = DateTime.Now - start;
+            callTime = $"{(int)time.TotalMinutes:D2}:{time.Seconds:D2}";
+            await InvokeAsync(StateHasChanged);
+        }, null, 0, 1000);
+    }
+
+    private async Task SimulateVoicePattern()
+    {
+        var rand = new Random();
+        while (currentPartner != null && !disposed)
+        {
+            await Task.Delay(rand.Next(3000, 7000));
+            
+            if (rand.Next(0, 2) == 0)
+            {
+                userSpeaking = true;
+                await InvokeAsync(StateHasChanged);
+                await Task.Delay(rand.Next(1000, 3000));
+                userSpeaking = false;
+            }
+            else
+            {
+                partnerSpeaking = true;
+                await InvokeAsync(StateHasChanged);
+                await Task.Delay(rand.Next(1000, 3000));
+                partnerSpeaking = false;
+            }
+            
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task SimulateNetworkStats()
+    {
+        var rand = new Random();
+        string[] statuses = { "Отлично", "Хорошо", "Нормально", "Плохо" };
+        while (currentPartner != null && !disposed)
+        {
+            await Task.Delay(8000);
+            connectionStatus = statuses[rand.Next(0, statuses.Length)];
+            ping = rand.Next(20, 150);
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task SimulateVoice()
+    {
+        userSpeaking = true;
+        StateHasChanged();
+        await Task.Delay(2000);
+        userSpeaking = false;
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        disposed = true;
+        callTimer?.Dispose();
+    }
+}
+
+<script>
+    let canvas, context;
+    let animFrame;
+    let userTalking = false;
+    let partnerTalking = false;
+    let soundBars = [];
+    let rotationAngle = 0;
+    
+    // Аудио компоненты
+    let audioCtx;
+    let soundAnalyzer;
+    let micStream;
+    let frequencyData;
+    let dataSize;
+    let micActive = false;
+    let audioLevel = 0;
+    let netRef = null;
+    let showMicInViz = true;
+
+    window.setupSoundVisualizer = function() {
+        canvas = document.getElementById('soundCanvas');
+        if (!canvas) {
+            console.log('Canvas element not found');
+            return;
+        }
+        
+        context = canvas.getContext('2d');
+        console.log('Canvas initialized');
+        
+        // Создаем звуковые полосы
+        const barCount = 60;
+        soundBars = [];
+        for (let i = 0; i < barCount; i++) {
+            soundBars.push({
+                height: 0,
+                targetHeight: 0,
+                angle: (Math.PI * 2 * i) / barCount
+            });
+        }
+    };
+
+    window.registerNetReference = function(reference) {
+        netRef = reference;
+        console.log('.NET reference registered');
+    };
+
+    window.startSoundVisualizer = async function() {
+        // Ждем появления canvas
+        let tries = 0;
+        while (tries < 10) {
+            canvas = document.getElementById('soundCanvas');
+            if (canvas) {
+                context = canvas.getContext('2d');
+                console.log('Canvas ready');
+                
+                // Инициализируем полосы если нужно
+                if (soundBars.length === 0) {
+                    const barCount = 60;
+                    for (let i = 0; i < barCount; i++) {
+                        soundBars.push({
+                            height: 0,
+                            targetHeight: 0,
+                            angle: (Math.PI * 2 * i) / barCount
+                        });
+                    }
+                }
+                break;
+            }
+            console.log('Waiting for canvas... attempt', tries + 1);
+            await new Promise(resolve => setTimeout(resolve, 100));
+            tries++;
+        }
+        
+        if (!canvas) {
+            console.error('Canvas not found after 10 attempts');
+            alert('Error: visualization element not found');
+            return;
+        }
+        
+        // Запрашиваем доступ к микрофону
+        try {
+            console.log('Requesting microphone access...');
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                } 
+            });
+            
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            soundAnalyzer = audioCtx.createAnalyser();
+            micStream = audioCtx.createMediaStreamSource(stream);
+            
+            soundAnalyzer.fftSize = 512;
+            soundAnalyzer.smoothingTimeConstant = 0.8;
+            dataSize = soundAnalyzer.frequencyBinCount;
+            frequencyData = new Uint8Array(dataSize);
+            
+            micStream.connect(soundAnalyzer);
+            micActive = true;
+            
+            console.log('Microphone connected');
+        } catch (err) {
+            console.error('Microphone access error:', err);
+            alert('Microphone access failed: ' + err.message);
+            micActive = false;
+        }
+        
+        console.log('Starting visualization...');
+        runAnimation();
+    };
+
+    window.stopSoundVisualizer = function() {
+        if (animFrame) {
+            cancelAnimationFrame(animFrame);
+            animFrame = null;
+        }
+        
+        // Отключаем микрофон
+        if (micStream && audioCtx) {
+            micStream.disconnect();
+            audioCtx.close();
+            micActive = false;
+        }
+        
+        userTalking = false;
+        partnerTalking = false;
+        audioLevel = 0;
+        console.log('Visualizer stopped');
+    };
+
+    window.pauseVisualization = function() {
+        // Останавливаем анимацию но оставляем микрофон
+        if (animFrame) {
+            cancelAnimationFrame(animFrame);
+            animFrame = null;
+        }
+        console.log('Animation paused (mic still active)');
+        
+        // Продолжаем отслеживать микрофон для статического режима
+        if (micActive && soundAnalyzer && netRef) {
+            monitorMicrophone();
+        }
+    };
+
+    function monitorMicrophone() {
+        if (!micActive || !soundAnalyzer) return;
+        
+        audioLevel = getAudioLevel();
+        const threshold = 0.02;
+        
+        if (showMicInViz) {
+            const talking = audioLevel > threshold;
+            if (userTalking !== talking) {
+                userTalking = talking;
+                if (netRef) {
+                    netRef.invokeMethodAsync('SetSpeakingState', userTalking);
+                }
+            }
+        }
+        
+        // Проверяем периодически
+        setTimeout(monitorMicrophone, 100);
+    }
+
+    window.updateVizState = function(talking, partnerTalkingState) {
+        partnerTalking = partnerTalkingState;
+        console.log('Partner state updated:', partnerTalkingState);
+    };
+
+    window.toggleMicDisplay = function(enabled) {
+        showMicInViz = enabled;
+        console.log('Mic visualization:', enabled ? 'on' : 'off');
+        
+        // Сбрасываем состояние если выключаем
+        if (!enabled) {
+            userTalking = false;
+            audioLevel = 0;
+        }
+    };
+
+    function getAudioLevel() {
+        if (!micActive || !soundAnalyzer) return 0;
+        
+        soundAnalyzer.getByteFrequencyData(frequencyData);
+        
+        // Считаем средний уровень
+        let total = 0;
+        for (let i = 0; i < dataSize; i++) {
+            total += frequencyData[i];
+        }
+        const avg = total / dataSize;
+        
+        // Нормализуем
+        const normalized = avg / 255;
+        
+        return normalized;
+    }
+
+    let lastState = false;
+    let frameCounter = 0;
+
+    function runAnimation() {
+        if (!canvas || !context) return;
+        
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const baseRadius = 80;
+        const maxHeight = 60;
+
+        // Получаем реальный уровень звука
+        audioLevel = getAudioLevel();
+        
+        // Логируем раз в секунду
+        frameCounter++;
+        if (frameCounter % 60 === 0) {
+            console.log('Audio level:', audioLevel.toFixed(4), 'Active:', micActive, 'Viz:', showMicInViz);
+        }
+        
+        // Порог для определения речи
+        const threshold = 0.02;
+        
+        // Учитываем настройку визуализации
+        if (showMicInViz) {
+            userTalking = audioLevel > threshold;
+        } else {
+            userTalking = false;
+            audioLevel = 0;
+        }
+
+        // Уведомляем C# об изменении
+        if (userTalking !== lastState && netRef) {
+            lastState = userTalking;
+            console.log('Speech state changed:', userTalking);
+            netRef.invokeMethodAsync('SetSpeakingState', userTalking);
+        }
+
+        // Очищаем canvas
+        context.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Обновляем вращение
+        rotationAngle += 0.01;
+
+        // Обновляем полосы
+        soundBars.forEach((bar, index) => {
+            if (userTalking) {
+                // Используем реальный уровень звука
+                const amplified = Math.min(1, audioLevel * 5);
+                bar.targetHeight = amplified * maxHeight * (0.6 + Math.random() * 0.4);
+            } else if (partnerTalking) {
+                // Случайная высота для собеседника
+                bar.targetHeight = Math.random() * maxHeight * (0.5 + Math.random() * 0.2);
+            } else {
+                // Минимальная активность
+                bar.targetHeight = Math.random() * 8;
+            }
+
+            // Плавное изменение
+            bar.height += (bar.targetHeight - bar.height) * 0.25;
+
+            // Рисуем полосу
+            const angle = bar.angle + rotationAngle;
+            const startX = centerX + Math.cos(angle) * baseRadius;
+            const startY = centerY + Math.sin(angle) * baseRadius;
+            const endX = centerX + Math.cos(angle) * (baseRadius + bar.height);
+            const endY = centerY + Math.sin(angle) * (baseRadius + bar.height);
+
+            // Цвет в зависимости от активности
+            let colorGradient = context.createLinearGradient(startX, startY, endX, endY);
+            if (userTalking) {
+                colorGradient.addColorStop(0, '#6366f1');
+                colorGradient.addColorStop(1, '#818cf8');
+            } else if (partnerTalking) {
+                colorGradient.addColorStop(0, '#ec4899');
+                colorGradient.addColorStop(1, '#f472b6');
+            } else {
+                colorGradient.addColorStop(0, '#475569');
+                colorGradient.addColorStop(1, '#64748b');
+            }
+
+            context.strokeStyle = colorGradient;
+            context.lineWidth = 3;
+            context.lineCap = 'round';
+            context.beginPath();
+            context.moveTo(startX, startY);
+            context.lineTo(endX, endY);
+            context.stroke();
+        });
+
+        // Внутреннее кольцо
+        context.beginPath();
+        context.arc(centerX, centerY, baseRadius - 5, 0, Math.PI * 2);
+        context.strokeStyle = userTalking ? '#6366f1' : partnerTalking ? '#ec4899' : '#334155';
+        context.lineWidth = 2;
+        context.stroke();
+
+        animFrame = requestAnimationFrame(runAnimation);
+    }
+
+    // Автоинициализация
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                console.log('Auto-initializing visualizer');
+                window.setupSoundVisualizer();
+            }, 100);
+        });
+    } else {
+        setTimeout(() => {
+            console.log('Auto-initializing visualizer');
+            window.setupSoundVisualizer();
+        }, 100);
+    }
+</script>
+
+<style>
+/* CSS стили остаются практически без изменений, так как они уже хорошо написаны */
+/* Можно только переименовать некоторые классы для соответствия новой разметке */
+
+:root {
+    --primary: #6366f1;
+    --primary-light: #818cf8;
+    --primary-dark: #4f46e5;
+    --accent: #ec4899;
+    --success: #10b981;
+    --error: #ef4444;
+    --warning: #f59e0b;
+    
+    --bg-dark: #0f0f23;
+    --bg-card: #1a1a2e;
+    --bg-panel: #16213e;
+    
+    --text-main: #ffffff;
+    --text-dim: #cbd5e1;
+    --text-muted: #64748b;
+    
+    --border: #334155;
+    --border-light: #475569;
+    
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-large: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+}
+
+body {
+    background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-card) 100%);
+    min-height: 100vh;
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--text-main);
+    margin: 0;
+    padding: 0;
+}
+
+.voice-chat-app {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    min-height: 100vh;
+}
+
+.app-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.app-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--primary);
+    margin: 0 0 0.5rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+}
+
+.app-title i {
+    color: var(--accent);
+}
+
+.app-subtitle {
+    color: var(--text-dim);
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.status-panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow);
+}
+
+.connection-status {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.status-online { background-color: var(--success); }
+.status-offline { background-color: var(--error); }
+.status-connecting { background-color: var(--warning); }
+
+.status-text {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+}
+
+.user-info {
+    background: var(--bg-card);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.user-id {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-dim);
+}
+
+.id-value {
+    color: var(--primary);
+    background: var(--bg-dark);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.main-content {
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    gap: 2rem;
+}
+
+.search-sidebar {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    height: fit-content;
+    position: sticky;
+    top: 1rem;
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 1.25rem;
+}
+
+.filter-block {
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1.5rem;
+}
+
+.filter-block:last-of-type {
+    border-bottom: none;
+    margin-bottom: 1.5rem;
+}
+
+.block-title {
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.filter-item {
+    margin-bottom: 1.25rem;
+}
+
+.filter-name {
+    display: block;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    font-size: 0.9rem;
+}
+
+.radio-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.radio-choice {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+}
+
+.radio-choice:hover {
+    background: var(--bg-card);
+}
+
+.radio-choice input[type="radio"] {
+    display: none;
+}
+
+.radio-dot {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--border-light);
+    border-radius: 50%;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.radio-choice input[type="radio"]:checked + .radio-dot {
+    border-color: var(--primary);
+    background: var(--primary);
+}
+
+.radio-choice input[type="radio"]:checked + .radio-dot::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: white;
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.gender-symbol {
+    font-size: 1.1rem;
+}
+
+.gender-symbol.male { color: #3b82f6; }
+.gender-symbol.female { color: #ec4899; }
+.gender-symbol.any { color: var(--text-dim); }
+
+.filter-dropdown {
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.75rem;
+    color: var(--text-main);
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.filter-dropdown:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.age-selectors {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.filter-dropdown.small {
+    width: auto;
+    min-width: 80px;
+}
+
+.age-dash {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.search-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.debug-section {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+}
+
+.btn {
+    padding: 0.75rem 1rem;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn.primary {
+    background: var(--primary);
+    color: white;
+}
+
+.btn.primary:hover:not(:disabled) {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+}
+
+.btn.secondary {
+    background: var(--error);
+    color: white;
+}
+
+.btn.secondary:hover:not(:disabled) {
+    background: #dc2626;
+    transform: translateY(-1px);
+}
+
+.btn.debug {
+    background: var(--warning);
+    color: white;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.debug-actions {
+    margin-top: 1rem;
+}
+
+.btn.small {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.75rem;
+}
+
+.searching-indicator {
+    text-align: center;
+    padding: 1rem;
+    background: var(--bg-card);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.searching-animation {
+    display: flex;
+    justify-content: center;
+    gap: 0.25rem;
+    margin-bottom: 0.75rem;
+}
+
+.searching-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--primary);
+    border-radius: 50%;
+    animation: search-pulse 1.5s infinite;
+}
+
+.searching-dot:nth-child(2) { animation-delay: 0.2s; }
+.searching-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@@keyframes search-pulse {
+    0%, 60%, 100% { opacity: 0.3; transform: scale(1); }
+    30% { opacity: 1; transform: scale(1.2); }
+}
+
+.searching-text {
+    color: var(--text-dim);
+    font-weight: 500;
+}
+
+.voice-main {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    min-height: 600px;
+}
+
+.call-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-card);
+    border-radius: 12px 12px 0 0;
+}
+
+.partner-avatar {
+    width: 60px;
+    height: 60px;
+    background: var(--primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.partner-avatar.active {
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.3),
+                0 0 0 8px rgba(99, 102, 241, 0.2),
+                0 0 0 12px rgba(99, 102, 241, 0.1);
+    animation: avatar-pulse 1.5s infinite;
+}
+
+@@keyframes avatar-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.partner-details {
+    flex: 1;
+}
+
+.partner-name {
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 0.25rem;
+    font-size: 1.1rem;
+}
+
+.partner-info {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+}
+
+.end-call-btn {
+    background: var(--error);
+    border: none;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.end-call-btn:hover {
+    background: #dc2626;
+    transform: scale(1.1);
+}
+
+.voice-display {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 2rem;
+    position: relative;
+}
+
+.call-time {
+    position: absolute;
+    top: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.sound-visualization {
+    position: relative;
+    width: 400px;
+    height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#soundCanvas {
+    display: block;
+}
+
+.visual-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.center-circle {
+    width: 100px;
+    height: 100px;
+    background: var(--bg-card);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    color: var(--text-muted);
+    border: 3px solid var(--border);
+    transition: all 0.3s ease;
+}
+
+.center-circle.pulsing {
+    border-color: var(--primary);
+    color: var(--primary);
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+    animation: circle-glow 2s infinite;
+}
+
+@@keyframes circle-glow {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(99, 102, 241, 0.6);
+    }
+}
+
+.talk-status {
+    margin-top: 1rem;
+}
+
+.status-message {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    padding: 0.75rem 1.5rem;
+    background: var(--bg-card);
+    border-radius: 24px;
+    border: 1px solid var(--border);
+}
+
+.status-message i {
+    font-size: 1.2rem;
+}
+
+.status-message:not(.quiet) {
+    color: var(--primary);
+    border-color: var(--primary);
+    background: rgba(99, 102, 241, 0.1);
+}
+
+.status-message.partner {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: rgba(236, 72, 153, 0.1);
+}
+
+.control-panel {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+    padding: 2rem;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-card);
+}
+
+.control-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.control-button {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: none;
+    background: var(--bg-panel);
+    color: var(--text-main);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    border: 2px solid var(--border);
+}
+
+.control-button:hover {
+    transform: scale(1.1);
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.control-button.off {
+    background: var(--warning);
+    color: white;
+    border-color: var(--warning);
+}
+
+.control-button.hangup {
+    background: var(--error);
+    color: white;
+    border-color: var(--error);
+    width: 72px;
+    height: 72px;
+    font-size: 1.75rem;
+}
+
+.control-button.hangup:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+    transform: scale(1.15);
+}
+
+.control-name {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    font-weight: 600;
+}
+
+.volume-panel {
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.display-settings {
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.volume-control {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.volume-name {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 200px;
+    color: var(--text-dim);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.volume-slider {
+    flex: 1;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--bg-card);
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.volume-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+}
+
+.volume-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--primary);
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+.volume-slider::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+}
+
+.volume-slider:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.volume-percent {
+    min-width: 50px;
+    text-align: right;
+    color: var(--primary);
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.display-settings {
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.setting-option {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.setting-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    background: var(--bg-card);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-dim);
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.setting-btn:hover {
+    background: var(--bg-panel);
+    border-color: var(--border-light);
+}
+
+.setting-btn.on {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.setting-btn i {
+    font-size: 1.25rem;
+}
+
+.setting-desc {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.call-stats {
+    display: flex;
+    justify-content: space-around;
+    padding: 1.5rem;
+    background: var(--bg-card);
+    border-radius: 0 0 12px 12px;
+}
+
+.stat {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-dim);
+    font-size: 0.9rem;
+}
+
+.stat i {
+    color: var(--primary);
+}
+
+.stat strong {
+    color: var(--text-main);
+    font-weight: 600;
+}
+
+.no-call {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    text-align: center;
+}
+
+.no-call-icon {
+    font-size: 4rem;
+    color: var(--primary);
+    margin-bottom: 1.5rem;
+}
+
+.no-call-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 0.75rem;
+}
+
+.no-call-desc {
+    color: var(--text-dim);
+    max-width: 400px;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+    font-size: 1.05rem;
+}
+
+.audio-tip {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid var(--primary);
+    border-radius: 8px;
+    color: var(--primary-light);
+    font-size: 0.9rem;
+}
+
+/* Статический визуализатор */
+.static-view {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.static-circles {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+.static-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 2px solid;
+    opacity: 0.15;
+}
+
+.static-ring.ring-1 {
+    width: 320px;
+    height: 320px;
+    border-color: var(--primary);
+}
+
+.static-ring.ring-2 {
+    width: 240px;
+    height: 240px;
+    border-color: var(--accent);
+}
+
+.static-ring.ring-3 {
+    width: 160px;
+    height: 160px;
+    border-color: var(--primary);
+}
+
+.static-ring.ring-4 {
+    width: 80px;
+    height: 80px;
+    border-color: var(--accent);
+}
+
+.static-center {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.static-icon {
+    width: 120px;
+    height: 120px;
+    background: var(--bg-card);
+    border: 3px solid var(--border);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    color: var(--text-muted);
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.static-icon.user-talking {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: rgba(99, 102, 241, 0.1);
+    box-shadow: 0 0 30px rgba(99, 102, 241, 0.4);
+}
+
+.static-icon.partner-talking {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(236, 72, 153, 0.1);
+    box-shadow: 0 0 30px rgba(236, 72, 153, 0.4);
+}
+
+.status-label {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-dim);
+    text-align: center;
+    padding: 0.75rem 1.5rem;
+    background: var(--bg-card);
+    border-radius: 24px;
+    border: 2px solid var(--border);
+}
+
+.status-label.waiting {
+    color: var(--text-muted);
+}
+
+.status-label:not(.waiting) {
+    color: var(--primary);
+    border-color: var(--primary);
+    background: rgba(99, 102, 241, 0.1);
+}
+
+.status-label.partner {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: rgba(236, 72, 153, 0.1);
+}
+
+.static-lines {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+.static-line {
+    position: absolute;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    opacity: 0.1;
+    height: 2px;
+}
+
+.static-line.line-a {
+    top: 30%;
+    left: 0;
+    right: 0;
+    transform: rotate(-15deg);
+}
+
+.static-line.line-b {
+    top: 50%;
+    left: 0;
+    right: 0;
+}
+
+.static-line.line-c {
+    top: 70%;
+    left: 0;
+    right: 0;
+    transform: rotate(15deg);
+}
+
+.static-line.line-d {
+    top: 50%;
+    left: 50%;
+    width: 2px;
+    height: 100%;
+    transform: translateX(-50%);
+    background: linear-gradient(180deg, transparent, var(--accent), transparent);
+}
+
+.setting-btn.small {
+    font-size: 0.85rem;
+    padding: 0.75rem 1rem;
+}
+
+@@media (max-width: 1024px) {
+    .main-content {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .search-sidebar {
+        position: static;
+    }
+}
+
+@@media (max-width: 768px) {
+    .voice-chat-app {
+        padding: 1rem;
+    }
+    
+    .app-title {
+        font-size: 2rem;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .sound-visualization {
+        width: 300px;
+        height: 300px;
+    }
+    
+    #soundCanvas {
+        width: 300px !important;
+        height: 300px !important;
+    }
+    
+    .control-panel {
+        gap: 1rem;
+    }
+    
+    .control-button {
+        width: 56px;
+        height: 56px;
+        font-size: 1.25rem;
+    }
+    
+    .control-button.hangup {
+        width: 64px;
+        height: 64px;
+    }
+    
+    .volume-panel {
+        padding: 1.5rem;
+    }
+    
+    .volume-name {
+        min-width: 150px;
+        font-size: 0.85rem;
+    }
+    
+    .call-stats {
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: flex-start;
+    }
+}
+</style>
