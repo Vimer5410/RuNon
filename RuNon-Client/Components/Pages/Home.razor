@@ -224,75 +224,93 @@
     
     protected override async Task OnInitializedAsync()
     {
-        for (int i = 0; i < 3; i++)
+        
+    for (int i = 0; i < 3; i++)
+    {
+        reconnectTime.Add(TimeSpan.FromSeconds(i*5));
+    }
+    
+    // Игнорируем SSL ошибки для самоподписанного сертификата
+    var httpClientHandler = new HttpClientHandler
+    {
+        ServerCertificateCustomValidationCallback = 
+            HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+    };
+    
+        
+    hubConnection = new HubConnectionBuilder()
+        .WithUrl(Navigation.ToAbsoluteUri("/simplehub"), options =>
         {
-            reconnectTime.Add(TimeSpan.FromSeconds(i*5));
-        }
-        
-        hubConnection = new HubConnectionBuilder()
-            .WithUrl(Navigation.ToAbsoluteUri("/simplehub"))
-            .WithAutomaticReconnect(reconnectTime.ToArray())
-            .Build();
-        
-        _rsa = RSA.Create(1024);
-        
-        await hubConnection.StartAsync();
-        
-        hubConnection.On<byte[], byte[], byte[]>("ReceiveMessage", (encryptedMessage, encryptedAesKey, aesIV) => 
+            options.HttpMessageHandlerFactory = _ => httpClientHandler;
+        })
+        .WithAutomaticReconnect(reconnectTime.ToArray())
+        .Build();
+    
+    _rsa = RSA.Create(1024);
+    
+    await hubConnection.StartAsync();
+    
+    hubConnection.On<byte[], byte[], byte[]>("ReceiveMessage", (encryptedMessage, encryptedAesKey, aesIV) => 
+    {
+        InvokeAsync(() =>
         {
-            InvokeAsync(() =>
+            try
             {
-                try
+                var aesKey = _rsa.Decrypt(encryptedAesKey, RSAEncryptionPadding.OaepSHA256);
+                var decryptedMessage = Decrypt(encryptedMessage, aesKey, aesIV);
+                if (!String.IsNullOrEmpty(decryptedMessage))
                 {
-                    var aesKey = _rsa.Decrypt(encryptedAesKey, RSAEncryptionPadding.OaepSHA256);
-                    var decryptedMessage = Decrypt(encryptedMessage, aesKey, aesIV);
-                    receiveUserMessage.Add((decryptedMessage, false));
-                    Console.WriteLine($"Received: {decryptedMessage}");
-                    StateHasChanged();
+                    receiveUserMessage.Add((decryptedMessage,false));
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error decrypting message: {ex.Message}");
-                }
-            }); 
-        });
-
-        hubConnection.On<string>("ReceiveUserIp", (UserIp) =>
-        {
-            InvokeAsync(() =>
-            {
-                userIp = UserIp;
-                if (userIp=="::1")
-                {
-                    userIp = "127.0.0.1";
-                }
-            });
-        });
-        
-        hubConnection.On<string>("ReceivePublicKey", (publicKey) => 
-        {
-            InvokeAsync(() =>
-            {
-                publicKeyFromServer = Convert.FromBase64String(publicKey);
-                Console.WriteLine($"Received public key");
+                Console.WriteLine($"Received: {decryptedMessage}");
                 StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error decrypting message: {ex.Message}");
+            }
+        }); 
+    });
+
+    hubConnection.On<string>("ReceiveUserIp", (UserIp) =>
+    {
+        InvokeAsync(() =>
+        {
+            userIp = UserIp;
+            if (userIp=="::1")
+            {
+                userIp = "127.0.0.1";
+            }
+        });
+    });
+    
+    hubConnection.On<string>("ReceivePublicKey", (publicKey) => 
+    {
+        InvokeAsync(() =>
+        {
+            publicKeyFromServer = Convert.FromBase64String(publicKey);
+            Console.WriteLine($"Received public key");
+            StateHasChanged();
             }); 
         });
+    
+    interviewerСlientID= hubConnection.ConnectionId;
+    yourClientID = hubConnection.ConnectionId;
+    
+    await hubConnection.InvokeAsync("GetPublicKey");
+    await hubConnection.InvokeAsync("GetUserIp");
+    
+    var rsaPublicKey = _rsa.ExportRSAPublicKey();
+    await hubConnection.InvokeAsync("ReceiveRSAkey", rsaPublicKey);
         
-        interviewerСlientID= hubConnection.ConnectionId;
-        yourClientID = hubConnection.ConnectionId;
-        
-        await hubConnection.InvokeAsync("GetPublicKey");
-        await hubConnection.InvokeAsync("GetUserIp");
-        
-        var rsaPublicKey = _rsa.ExportRSAPublicKey();
-        await hubConnection.InvokeAsync("ReceiveRSAkey", rsaPublicKey);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
+            await Task.Delay(3000);
+            Console.WriteLine($"После задержки, userIp = {userIp}");
             await CreateOrIdentify();
             StateHasChanged();
         }
@@ -300,7 +318,11 @@
 
     private async Task SendTestMessage()
     {
-        receiveUserMessage.Add((messagetext,true));
+        if (!String.IsNullOrEmpty(messagetext))
+        {
+            receiveUserMessage.Add((messagetext,true));
+        }
+        
         
         if (hubConnection?.State == HubConnectionState.Connected && !isUserBanned)
         {
