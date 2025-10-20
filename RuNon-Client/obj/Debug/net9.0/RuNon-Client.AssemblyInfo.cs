@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("RuNon-Client")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+24051784bda5da41bad4af4baa23900ceb5e092d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+afdbadd7815db7710a45c32520bb0a6a5f5aa2eb")]
 [assembly: System.Reflection.AssemblyProductAttribute("RuNon-Client")]
 [assembly: System.Reflection.AssemblyTitleAttribute("RuNon-Client")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

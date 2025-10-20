@@ -1,9 +1,11 @@
+using System.Net;
 using RuNon_Client.Components;
 using RuNon_Client.Hubs;
 using RuNon_Client.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true;
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
