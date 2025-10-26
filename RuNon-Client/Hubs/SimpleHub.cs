@@ -77,6 +77,21 @@ public class SimpleHub : Hub
             }
         }
     }
+
+    public async Task SendWebRtcOffer(string targetUserId, string offerJson)
+    {
+        await Clients.Client(targetUserId).SendAsync("ReceiveOffer",offerJson);
+    }
+
+    public async Task SendIceCandidate(string targetUserId, string candidate)
+    {
+        await Clients.Client(targetUserId).SendAsync("ReceiveIceCandidate",candidate);
+    }
+
+    public async Task SendWebRTCAnswer(string targetUserId, string answer)
+    {
+        await Clients.Client(targetUserId).SendAsync("ReceiveAnswer",answer);
+    }
     
     
 }

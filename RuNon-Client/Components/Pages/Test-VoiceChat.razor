@@ -1,6 +1,7 @@
 ﻿@page "/voice-chat"
 @using Microsoft.AspNetCore.SignalR.Client
 @inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
 
 <div class="voice-chat">
     <h3> Голосовой чат </h3>
@@ -41,10 +42,13 @@
 </div>
 
 @code {
-    private HubConnection hubConnection;
+    private static HubConnection? hubConnection;
     private bool isInCall = false;
     private List<Participant> participants = new();
 
+    
+
+    
     private async Task OpenSignalR()
     {
         if (hubConnection == null)
@@ -55,7 +59,6 @@
                     HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
             };
     
-        
             hubConnection = new HubConnectionBuilder()
                 .WithUrl(Navigation.ToAbsoluteUri("/simplehub"), options =>
                 {
@@ -64,7 +67,26 @@
                 .Build();
 
             await hubConnection.StartAsync();
+            
+            hubConnection.On<string>("ReceiveOffer", async (offerJson) =>
+            {
+                await JSRuntime.InvokeVoidAsync("ReceiveAudioFromA", offerJson);
+            });
+
+            hubConnection.On<string>("ReceiveAnswer", async (answerJson) =>
+            {
+                await JSRuntime.InvokeVoidAsync("HandleAnswer", answerJson);
+            });
+
+            hubConnection.On<string>("ReceiveIceCandidate", async (candidateJson) =>
+            {
+                await JSRuntime.InvokeVoidAsync("HandleIceCandidate", candidateJson);
+            });
+            
         }
+        
+        
+        
     }
     
     class Participant
@@ -76,34 +98,104 @@
     
     
     
-    
-    
-    
-    
-    // логика работы с WebRTC + сигналлинг
-    
     private async Task JoinCall()
     {
         await OpenSignalR();
+        await Task.Delay(500);
+        await JSRuntime.InvokeVoidAsync("SendAudioToClientB");
         isInCall = true;
-        await hubConnection.SendAsync("JoinCall");
+    }
+    
+    
+    //методы C#, вызываемые из JS
+    [JSInvokable]
+    public static async Task SendOfferToHub(string targetUserId, string offerJson)
+    {
+        await hubConnection.InvokeAsync("SendWebRtcOffer", targetUserId, offerJson);
     }
 
-    private async Task LeaveCall()
+    [JSInvokable]
+    public static async Task SendIceCandidateToHub(string targetUserId, string candidate)
     {
-        isInCall = false;
-        await hubConnection.SendAsync("LeaveCall");
+        await hubConnection.InvokeAsync("SendIceCandidate", targetUserId, candidate);
     }
 
-    public async ValueTask DisposeAsync()
+    [JSInvokable]
+    public static async Task SendAnswerToHub(string targetUserId, string answer)
     {
-        if (hubConnection != null)
-        {
-            await hubConnection.DisposeAsync();
-        }
+        await hubConnection.InvokeAsync("SendWebRTCAnswer", targetUserId, answer);
+    }
+
+    private void LeaveCall()
+    {
+        throw new NotImplementedException();
     }
     
 }
+
+<script>
+
+
+     async function SendAudioToClientB(targetUserId){
+             //основные действия с аудио потоком (изятие и добавление в коннектион)
+             const stream=await navigator.mediaDevices.getUserMedia({audio: true});
+             const connection = new RTCPeerConnection({iceServers:[{urls: "stun:stun.l.google.com:19302"}]});
+             stream.getTracks().forEach(TrackEvent => {connection.addTrack(TrackEvent, stream)} );
+             //подписка на ice кандидаты
+                 connection.onicecandidate = async (event) => {
+                     if (event.candidate){
+                         await DotNet.invokeMethodAsync('RuNon_Client', 'SendIceCandidateToHub', 
+                             targetUserId, JSON.stringify(event.candidate));
+                         }
+                     
+                 };
+                 
+            // создание и отправка оффера клиенту B
+                    const offer=await connection.createOffer();
+                    await connection.setLocalDescription(offer);
+                   
+                    await DotNet.invokeMethodAsync('RuNon_Client', 'SendOfferToHub', 
+                        targetUserId, JSON.stringify(offer));
+     }
+
+    
+    
+    
+    async function ReceiveAudioFromA(fromUserId, offerJson){
+        
+              const offer= JSON.parse(offerJson);
+                
+              //основные действия с аудио потоком (изятие и добавление в коннектион)
+              const stream=await navigator.mediaDevices.getUserMedia({audio: true});
+              const connection = new RTCPeerConnection({iceServers:[{urls: "stun:stun.l.google.com:19302"}]});
+              stream.getTracks().forEach(TrackEvent => {connection.addTrack(TrackEvent, stream)} );
+              
+              
+              //подписка на ice кандидаты
+              connection.onicecandidate =async (event) => {
+                 if (event.candidate){
+                     await DotNet.invokeMethodAsync('RuNon_Client', 'SendIceCandidateToHub', 
+                         fromUserId, JSON.stringify(event.candidate));
+                 }
+                                  
+              };
+                              
+             await connection.setRemoteDescription(offer);
+             const answer=await connection.createAnswer();
+             await connection.setLocalDescription(answer);
+             
+             //answer отправлен клиенту A
+             await DotNet.invokeMethodAsync('RuNon_Client', 'SendAnswerToHub', fromUserId, JSON.stringify(answer));
+    }
+     
+</script>
+
+
+
+
+
+
+
 
 <style>
     .voice-chat {
