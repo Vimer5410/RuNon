@@ -192,3 +192,4 @@ C:\Users\Asus\source\C#\RuNon\RuNon-Client\bin\Debug\net9.0\runtimes\win-x64\nat
 C:\Users\Asus\source\C#\RuNon\RuNon-Client\bin\Debug\net9.0\runtimes\win-x86\native\e_sqlite3.dll
 C:\Users\Asus\source\C#\RuNon\RuNon-Client\obj\Debug\net9.0\compressed\w882hfwgee-7di918n3zr.gz
 C:\Users\Asus\source\C#\RuNon\RuNon-Client\obj\Debug\net9.0\compressed\plzzxn5edl-7di918n3zr.gz
+C:\Users\Asus\source\C#\RuNon\RuNon-Client\obj\Debug\net9.0\compressed\ei1v3ylcn9-fac7bz7kt2.gz
