@@ -16,6 +16,7 @@
             alert("Не удалось получить доступ к микрофону!");
         }
     },
+    
 
     async createConnectionForUser(userId, dotNetRef) {
         console.log("[JS] Создание connection для", userId);
@@ -28,20 +29,18 @@
                 { urls: "stun:stun.l.google.com:19302" },
                 { urls: "stun:stun1.l.google.com:19302" },
 
-                // Twilio 
                 {
-                    urls: "turn:global.turn.twilio.com:3478?transport=udp",
-                    username: "",
-                    credential: ""
+                    urls: "turn:46.44.26.21:3478",
+                    username: "voiceuser",
+                    credential: "VoicePass123"
+                    
                 },
+                {
+                    urls: "turn:46.44.26.21:3478?transport=tcp",
+                    username: "voiceuser",
+                    credential: "VoicePass123"
 
-                // Numb
-                {
-                    urls: "turn:numb.viagenie.ca",
-                    username: "webrtc@live.com",
-                    credential: "muazkh"
-                },
-                
+                }
                 
             ],
             iceCandidatePoolSize: 10
@@ -51,7 +50,7 @@
             pc.addTrack(track, this.localStream);
             console.log("[JS] Трек добавлен:", track.kind);
         });
-
+        
         pc.ontrack = async (event) => {
             console.log("[JS]  Получен аудио трек от", userId);
             console.log("[JS] Stream:", event.streams[0]);
