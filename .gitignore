@@ -18,9 +18,3 @@ x86/
 .idea/
 *.sln.iml
 /shelf/
-
-# WebStorm created files
-/.idea/modules.xml
-/.idea/RuNon.iml
-/.idea/vcs.xml
-/.idea/workspace.xml
