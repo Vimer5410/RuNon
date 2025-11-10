@@ -1,3 +1,24 @@
+# Common .NET files
+[Bb]in/
+[Oo]bj/
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+
+# Rider
+.idea/
+*.sln.iml
+/shelf/
+
 # WebStorm created files
 /.idea/modules.xml
 /.idea/RuNon.iml
