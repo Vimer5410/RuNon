@@ -2,238 +2,244 @@
 @using Microsoft.AspNetCore.SignalR.Client
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
+@implements IAsyncDisposable
 
-<div class="voice-chat">
-    <h3> Голосовой чат </h3>
+<PageTitle>Voice Room</PageTitle>
+
+<div style="padding: 20px; max-width: 600px; margin: 0 auto;">
+    <h2> Голосовая комната</h2>
     
-    <div class="controls">
-        @if (!isInCall)
-        {
-            <button @onclick="JoinCall" class="btn-join"> Подключиться к звонку </button>
-        }
-        else
-        {
-            <button @onclick="LeaveCall" class="btn-leave"> Отключиться </button>
-        }
-    </div>
-
-    <div class="participants">
-        <h4>Участники звонка:</h4>
-        <table class="users-table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Статус</th>
-                    <th>Время подключения</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var user in participants)
+    @if (hubConnection == null || hubConnection.State != HubConnectionState.Connected)
+    {
+        <div style="text-align: center; padding: 30px;">
+            <p style="font-size: 18px;">⏳ Подключение к серверу...</p>
+        </div>
+    }
+    else if (!inRoom)
+    {
+        <div style="margin: 30px 0; text-align: center;">
+            <p style="font-size: 16px; margin-bottom: 20px;">
+                Нажмите кнопку чтобы присоединиться к голосовой комнате.<br/>
+                
+            </p>
+            
+            <button @onclick="JoinRoom" 
+                    disabled="@isConnecting"
+                    style="width: 100%; padding: 20px; background: #4CAF50; color: white; border: none; border-radius: 8px; font-size: 18px; cursor: pointer;">
+                @if (isConnecting)
                 {
-                    <tr>
-                        <td>@user.Id</td>
-                        <td>@user.Status</td>
-                        <td>@user.JoinTime</td>
-                    </tr>
+                    <span>⏳ Вход в комнату...</span>
                 }
-            </tbody>
-        </table>
-    </div>
+                else
+                {
+                    <span> Войти в комнату</span>
+                }
+            </button>
+        </div>
+    }
+    else
+    {
+        <div style="background: #c8e6c9; padding: 20px; margin: 20px 0; border-radius: 8px; text-align: center;">
+            <h3>✅ Вы в комнате!</h3>
+            <p>Участников: <strong>@participantCount</strong></p>
+            <p style="font-size: 14px; color: #555; margin-top: 10px;">
+                Мой ID: <code>@(hubConnection?.ConnectionId ?? "")</code>
+            </p>
+        </div>
+        
+        <button @onclick="LeaveRoom"
+                style="width: 100%; padding: 15px; background: #f44336; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;">
+             Выйти из комнаты
+        </button>
+        
+        <div style="margin-top: 20px; padding: 15px; background: #e3f2fd; border-radius: 8px;">
+            <strong>СВОдка:</strong>
+            <p style="margin: 10px 0 0 0;">
+                Откройте эту страницу в нескольких окнах браузера и войдите в комнату
+            </p>
+        </div>
+    }
+    
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div style="background: #ffebee; padding: 15px; margin: 20px 0; border-radius: 8px; color: #c62828;">
+            <strong>❌ Ошибка:</strong> @errorMessage
+        </div>
+    }
 </div>
 
 @code {
-    private static HubConnection? hubConnection;
-    private bool isInCall = false;
-    private List<Participant> participants = new();
-
+    private HubConnection? hubConnection; 
+    private DotNetObjectReference<Test_VoiceChat> dotNetRef;
+    private bool inRoom = false;
+    private bool isConnecting = false;
+    private int participantCount = 1;
+    private string errorMessage = "";
     
-
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Создаём ссылку для JS
+            dotNetRef = DotNetObjectReference.Create(this);
+            await ConnectToHub();
+        }
+    }
     
-    private async Task OpenSignalR()
+    private async Task ConnectToHub()
     {
         if (hubConnection == null)
         {
-            var httpClientHandler = new HttpClientHandler
+            Console.WriteLine("[C#] Подключение к Hub...");
+            
+            try
             {
-                ServerCertificateCustomValidationCallback = 
-                    HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-            };
-    
-            hubConnection = new HubConnectionBuilder()
-                .WithUrl(Navigation.ToAbsoluteUri("/simplehub"), options =>
+                // Игнорируем SSL ошибки для самоподписанного сертификата
+                var httpClientHandler = new HttpClientHandler
                 {
-                    options.HttpMessageHandlerFactory = _ => httpClientHandler;
-                })
-                .Build();
-
-            await hubConnection.StartAsync();
-            
-            hubConnection.On<string>("ReceiveOffer", async (offerJson) =>
+                    ServerCertificateCustomValidationCallback = 
+                        HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                };
+    
+        
+                hubConnection = new HubConnectionBuilder()
+                    .WithUrl(Navigation.ToAbsoluteUri("/simplehub"), options =>
+                    {
+                        options.HttpMessageHandlerFactory = _ => httpClientHandler;
+                    })
+                    .Build();
+                
+                hubConnection.On<string>("UserJoined", async (userId) =>
+                {
+                    Console.WriteLine($"[C#] Пользователь присоединился: {userId}");
+                    participantCount++;
+                    await InvokeAsync(StateHasChanged);
+                    await JSRuntime.InvokeVoidAsync("VoiceChat.handleUserJoined", userId, dotNetRef);
+                });
+                
+                hubConnection.On<string, string>("ReceiveOffer", async (offer, fromUserId) =>
+                {
+                    Console.WriteLine($"[C#] Получен Offer от {fromUserId}");
+                    await JSRuntime.InvokeVoidAsync("VoiceChat.handleOffer", offer, fromUserId, dotNetRef);
+                });
+                
+                hubConnection.On<string>("ReceiveAnswer", async (answer) =>
+                {
+                    Console.WriteLine("[C#] Получен Answer");
+                    await JSRuntime.InvokeVoidAsync("VoiceChat.handleAnswer", answer, "", dotNetRef);
+                });
+                
+                hubConnection.On<string>("ReceiveIceCandidate", async (candidate) =>
+                {
+                    Console.WriteLine("[C#] Получен ICE");
+                    await JSRuntime.InvokeVoidAsync("VoiceChat.handleIce", candidate, "", dotNetRef);
+                });
+                
+                hubConnection.On<string>("UserLeft", async (userId) =>
+                {
+                    Console.WriteLine($"[C#] Пользователь вышел: {userId}");
+                    participantCount = Math.Max(1, participantCount - 1);
+                    await InvokeAsync(StateHasChanged);
+                    await JSRuntime.InvokeVoidAsync("VoiceChat.handleUserLeft", userId);
+                });
+                
+                await hubConnection.StartAsync();
+                Console.WriteLine($"[C#] Подключён к Hub! ID: {hubConnection.ConnectionId}");
+                await InvokeAsync(StateHasChanged);
+            }
+            catch (Exception ex)
             {
-                await JSRuntime.InvokeVoidAsync("ReceiveAudioFromA", offerJson);
-            });
-
-            hubConnection.On<string>("ReceiveAnswer", async (answerJson) =>
-            {
-                await JSRuntime.InvokeVoidAsync("HandleAnswer", answerJson);
-            });
-
-            hubConnection.On<string>("ReceiveIceCandidate", async (candidateJson) =>
-            {
-                await JSRuntime.InvokeVoidAsync("HandleIceCandidate", candidateJson);
-            });
-            
+                Console.WriteLine($"[C#] ОШИБКА подключения: {ex.Message}");
+                errorMessage = "Не удалось подключиться к серверу";
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+    }
+    
+    private async Task JoinRoom()
+    {
+        if (hubConnection == null || hubConnection.State != HubConnectionState.Connected)
+        {
+            errorMessage = "Нет подключения к серверу. Обновите страницу.";
+            StateHasChanged();
+            return;
         }
         
+        isConnecting = true;
+        errorMessage = "";
+        StateHasChanged();
         
+        try
+        {
+            Console.WriteLine("[C#] Вход в комнату...");
+            
+            
+            // Передаём dotNetRef в JS
+            await JSRuntime.InvokeVoidAsync("VoiceChat.joinRoom", dotNetRef);
+            inRoom = true;
+            Console.WriteLine("[C#] Успешно вошли в комнату!");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[C#] ОШИБКА входа в комнату: {ex.Message}");
+            errorMessage = $"Не удалось войти в комнату: {ex.Message}";
+        }
+        finally
+        {
+            isConnecting = false;
+            StateHasChanged();
+        }
+    }
+    
+    private void LeaveRoom()
+    {
+        inRoom = false;
+        participantCount = 1;
+    }
+    
+    
+    [JSInvokable]
+    public async Task JoinRoomOnServer()
+    {
+        Console.WriteLine($"[C#] JoinRoomOnServer вызван. ID: {hubConnection?.ConnectionId}");
         
+        if (hubConnection == null || hubConnection.State != HubConnectionState.Connected)
+        {
+            throw new InvalidOperationException($"Hub не подключён. State: {hubConnection?.State}");
+        }
+        
+        await hubConnection.InvokeAsync("JoinRoom");
+        Console.WriteLine("[C#] JoinRoom успешно вызван на сервере");
     }
     
-    class Participant
-    {
-        public string Id { get; set; }
-        public string Status { get; set; }
-        public string JoinTime { get; set; }
-    }
-    
-    
-    
-    private async Task JoinCall()
-    {
-        await OpenSignalR();
-        await Task.Delay(500);
-        await JSRuntime.InvokeVoidAsync("SendAudioToClientB");
-        isInCall = true;
-    }
-    
-    
-    //методы C#, вызываемые из JS
     [JSInvokable]
-    public static async Task SendOfferToHub(string targetUserId, string offerJson)
+    public async Task SendOfferToRoom(string offer)
     {
-        await hubConnection.InvokeAsync("SendWebRtcOffer", targetUserId, offerJson);
-    }
-
-    [JSInvokable]
-    public static async Task SendIceCandidateToHub(string targetUserId, string candidate)
-    {
-        await hubConnection.InvokeAsync("SendIceCandidate", targetUserId, candidate);
-    }
-
-    [JSInvokable]
-    public static async Task SendAnswerToHub(string targetUserId, string answer)
-    {
-        await hubConnection.InvokeAsync("SendWebRTCAnswer", targetUserId, answer);
-    }
-
-    private void LeaveCall()
-    {
-        throw new NotImplementedException();
+        Console.WriteLine("[C#] Отправка Offer в комнату");
+        await hubConnection!.InvokeAsync("SendOfferToRoom", offer);
     }
     
+    [JSInvokable]
+    public async Task SendAnswer(string targetId, string answer)
+    {
+        Console.WriteLine($"[C#] Отправка Answer к {targetId}");
+        await hubConnection!.InvokeAsync("SendAnswerToUser", targetId, answer);
+    }
+    
+    [JSInvokable]
+    public async Task SendIce(string targetId, string candidate)
+    {
+        Console.WriteLine($"[C#] Отправка ICE к {targetId}");
+        await hubConnection!.InvokeAsync("SendIceCandidateToUser", targetId, candidate);
+    }
+    
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection != null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+        dotNetRef?.Dispose();
+    }
 }
-
-<script>
-
-
-     async function SendAudioToClientB(targetUserId){
-             //основные действия с аудио потоком (изятие и добавление в коннектион)
-             const stream=await navigator.mediaDevices.getUserMedia({audio: true});
-             const connection = new RTCPeerConnection({iceServers:[{urls: "stun:stun.l.google.com:19302"}]});
-             stream.getTracks().forEach(TrackEvent => {connection.addTrack(TrackEvent, stream)} );
-             //подписка на ice кандидаты
-                 connection.onicecandidate = async (event) => {
-                     if (event.candidate){
-                         await DotNet.invokeMethodAsync('RuNon_Client', 'SendIceCandidateToHub', 
-                             targetUserId, JSON.stringify(event.candidate));
-                         }
-                     
-                 };
-                 
-            // создание и отправка оффера клиенту B
-                    const offer=await connection.createOffer();
-                    await connection.setLocalDescription(offer);
-                   
-                    await DotNet.invokeMethodAsync('RuNon_Client', 'SendOfferToHub', 
-                        targetUserId, JSON.stringify(offer));
-     }
-
-    
-    
-    
-    async function ReceiveAudioFromA(fromUserId, offerJson){
-        
-              const offer= JSON.parse(offerJson);
-                
-              //основные действия с аудио потоком (изятие и добавление в коннектион)
-              const stream=await navigator.mediaDevices.getUserMedia({audio: true});
-              const connection = new RTCPeerConnection({iceServers:[{urls: "stun:stun.l.google.com:19302"}]});
-              stream.getTracks().forEach(TrackEvent => {connection.addTrack(TrackEvent, stream)} );
-              
-              
-              //подписка на ice кандидаты
-              connection.onicecandidate =async (event) => {
-                 if (event.candidate){
-                     await DotNet.invokeMethodAsync('RuNon_Client', 'SendIceCandidateToHub', 
-                         fromUserId, JSON.stringify(event.candidate));
-                 }
-                                  
-              };
-                              
-             await connection.setRemoteDescription(offer);
-             const answer=await connection.createAnswer();
-             await connection.setLocalDescription(answer);
-             
-             //answer отправлен клиенту A
-             await DotNet.invokeMethodAsync('RuNon_Client', 'SendAnswerToHub', fromUserId, JSON.stringify(answer));
-    }
-     
-</script>
-
-
-
-
-
-
-
-
-<style>
-    .voice-chat {
-        padding: 20px;
-    }
-    
-    .controls {
-        margin: 20px 0;
-    }
-    
-    .btn-join {
-        background: green;
-        color: white;
-        padding: 10px 20px;
-        border: none;
-        cursor: pointer;
-    }
-    
-    .btn-leave {
-        background: red;
-        color: white;
-        padding: 10px 20px;
-        border: none;
-        cursor: pointer;
-    }
-    
-    .users-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-    
-    .users-table th, .users-table td {
-        border: 1px solid #ddd;
-        padding: 8px;
-        text-align: left;
-    }
-    
-    .users-table th {
-        background: #f2f2f2;
-    }
-</style>

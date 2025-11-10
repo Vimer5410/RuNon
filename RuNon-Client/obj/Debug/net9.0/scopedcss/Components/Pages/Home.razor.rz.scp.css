@@ -305,16 +305,20 @@
     align-self: flex-end;
 }
 
+.partner-message[b-xzaq01y17q] {
+    align-self: flex-start;
+}
+
 .my-message .message-content[b-xzaq01y17q] {
     background: var(--primary-color);
     color: white;
-    border-radius: 10px 10px 2px 10px;
+    border-radius: 10px 10px 0px 10px;
 }
 
 .partner-message .message-content[b-xzaq01y17q] {
     background: var(--bg-secondary);
     color: var(--text-primary);
-    border-radius: 10px 10px 10px 2px;
+    border-radius: 10px 10px 10px 0px;
 }
 
 .message-content[b-xzaq01y17q] {
@@ -322,6 +326,7 @@
     margin-bottom: 0.2rem;
     font-size: 0.85rem;
     line-height: 1.3;
+    word-break: break-all;
 }
 
 .message-time[b-xzaq01y17q] {

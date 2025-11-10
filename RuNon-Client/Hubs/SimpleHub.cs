@@ -78,20 +78,42 @@ public class SimpleHub : Hub
         }
     }
 
-    public async Task SendWebRtcOffer(string targetUserId, string offerJson)
+    private const string ROOM_NAME = "VoiceRoom"; //   единая комната
+        
+    public async Task JoinRoom()
     {
-        await Clients.Client(targetUserId).SendAsync("ReceiveOffer",offerJson);
+        await Groups.AddToGroupAsync(Context.ConnectionId, ROOM_NAME);
+        Console.WriteLine($"[Hub] {Context.ConnectionId} присоединился к комнате");
+            
+        // закидываю уведы
+        await Clients.OthersInGroup(ROOM_NAME).SendAsync("UserJoined", Context.ConnectionId);
     }
-
-    public async Task SendIceCandidate(string targetUserId, string candidate)
+        
+    public async Task SendOfferToRoom(string offer)
     {
-        await Clients.Client(targetUserId).SendAsync("ReceiveIceCandidate",candidate);
+        Console.WriteLine($"[Hub] {Context.ConnectionId} отправил Offer в комнату");
+        
+        await Clients.OthersInGroup(ROOM_NAME).SendAsync("ReceiveOffer", offer, Context.ConnectionId);
     }
-
-    public async Task SendWebRTCAnswer(string targetUserId, string answer)
+        
+    public async Task SendAnswerToUser(string targetId, string answer)
     {
-        await Clients.Client(targetUserId).SendAsync("ReceiveAnswer",answer);
+        Console.WriteLine($"[Hub] {Context.ConnectionId} отправил Answer к {targetId}");
+        await Clients.Client(targetId).SendAsync("ReceiveAnswer", answer);
     }
-    
-    
+        
+    public async Task SendIceCandidateToUser(string targetId, string candidate)
+    {
+        Console.WriteLine($"[Hub] {Context.ConnectionId} отправил ICE к {targetId}");
+        await Clients.Client(targetId).SendAsync("ReceiveIceCandidate", candidate);
+    }
+        
+    public override async Task OnDisconnectedAsync(Exception? exception)
+    {
+        Console.WriteLine($"[Hub] {Context.ConnectionId} отключился");
+        await Clients.OthersInGroup(ROOM_NAME).SendAsync("UserLeft", Context.ConnectionId);
+        await base.OnDisconnectedAsync(exception);
+    }
 }
+    
+    
