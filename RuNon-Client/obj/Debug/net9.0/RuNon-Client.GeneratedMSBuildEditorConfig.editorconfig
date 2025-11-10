@@ -9,49 +9,49 @@ build_property.EnforceExtendedAnalyzerRules =
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = RuNon-Client
 build_property.RootNamespace = RuNon-Client
-build_property.ProjectDir = C:\Users\Asus\source\C#\RuNon\RuNon-Client\
+build_property.ProjectDir = C:\Users\glebd\Projects\C#\RuNon\RuNon-Client\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 build_property.RazorLangVersion = 9.0
 build_property.SupportLocalizedComponentNames = 
 build_property.GenerateRazorMetadataSourceChecksumAttributes = 
-build_property.MSBuildProjectDirectory = C:\Users\Asus\source\C#\RuNon\RuNon-Client
+build_property.MSBuildProjectDirectory = C:\Users\glebd\Projects\C#\RuNon\RuNon-Client
 build_property._RazorSourceGeneratorDebug = 
 build_property.EffectiveAnalysisLevelStyle = 9.0
 build_property.EnableCodeStyleSeverity = 
 
-[C:/Users/Asus/source/C\#/RuNon/RuNon-Client/Components/App.razor]
+[C:/Users/glebd/Projects/C\#/RuNon/RuNon-Client/Components/App.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBcHAucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Asus/source/C\#/RuNon/RuNon-Client/Components/Pages/Error.razor]
+[C:/Users/glebd/Projects/C\#/RuNon/RuNon-Client/Components/Pages/Error.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xFcnJvci5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Asus/source/C\#/RuNon/RuNon-Client/Components/Pages/Test-VoiceChat.razor]
+[C:/Users/glebd/Projects/C\#/RuNon/RuNon-Client/Components/Pages/Test-VoiceChat.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xUZXN0LVZvaWNlQ2hhdC5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Asus/source/C\#/RuNon/RuNon-Client/Components/Pages/Test.razor]
+[C:/Users/glebd/Projects/C\#/RuNon/RuNon-Client/Components/Pages/Test.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xUZXN0LnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Asus/source/C\#/RuNon/RuNon-Client/Components/Pages/VoiceChat.razor]
+[C:/Users/glebd/Projects/C\#/RuNon/RuNon-Client/Components/Pages/VoiceChat.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xWb2ljZUNoYXQucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Asus/source/C\#/RuNon/RuNon-Client/Components/Routes.razor]
+[C:/Users/glebd/Projects/C\#/RuNon/RuNon-Client/Components/Routes.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xSb3V0ZXMucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Asus/source/C\#/RuNon/RuNon-Client/Components/_Imports.razor]
+[C:/Users/glebd/Projects/C\#/RuNon/RuNon-Client/Components/_Imports.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xfSW1wb3J0cy5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/Asus/source/C\#/RuNon/RuNon-Client/Components/Layout/MainLayout.razor]
+[C:/Users/glebd/Projects/C\#/RuNon/RuNon-Client/Components/Layout/MainLayout.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcTWFpbkxheW91dC5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = b-bv1qjnzeqj
 
-[C:/Users/Asus/source/C\#/RuNon/RuNon-Client/Components/Pages/Home.razor]
+[C:/Users/glebd/Projects/C\#/RuNon/RuNon-Client/Components/Pages/Home.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xIb21lLnJhem9y
 build_metadata.AdditionalFiles.CssScope = b-xzaq01y17q
