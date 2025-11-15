@@ -11,6 +11,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<EncryptionService>();
+builder.Services.AddScoped<MatchMakingService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

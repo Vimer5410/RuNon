@@ -1,9 +1,12 @@
 ﻿@page "/voice-chat"
 @using Microsoft.AspNetCore.SignalR.Client
+@using RuNon_Client.Services
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
+@inject MatchMakingService _matchMakingService
 @rendermode InteractiveServer
 @implements IAsyncDisposable
+
 
 <PageTitle>Voice Room</PageTitle>
 
@@ -36,6 +39,16 @@
                     <span> Войти в комнату</span>
                 }
             </button>
+            
+            <button @onclick="TestBtn"
+                    style="width: 100%; padding: 15px; background: #993eff; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;">
+                Search Partner
+            </button>
+            @if (!string.IsNullOrEmpty(pair.Item1))
+            {
+                <p>@pair</p>
+            }
+            
         </div>
     }
     else
@@ -76,6 +89,14 @@
     private bool isConnecting = false;
     private int participantCount = 1;
     private string errorMessage = "";
+    private (string?, string?) pair;
+    
+    private void TestBtn()
+    {
+        Random random = new Random();
+        _matchMakingService.AddToQueue(random.Next(0,100).ToString());
+        pair = _matchMakingService.SearchCommand();
+    }
     
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -242,4 +263,7 @@
         }
         dotNetRef?.Dispose();
     }
+
+    
+
 }
