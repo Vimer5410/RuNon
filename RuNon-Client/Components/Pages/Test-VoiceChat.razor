@@ -1,9 +1,11 @@
 ﻿@page "/voice-chat"
 @using Microsoft.AspNetCore.SignalR.Client
 @using RuNon_Client.Services
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
 @inject MatchMakingService _matchMakingService
+@inject ProtectedLocalStorage _protectedLocalStorage
 @rendermode InteractiveServer
 @implements IAsyncDisposable
 
@@ -91,10 +93,10 @@
     private string errorMessage = "";
     private (string?, string?) pair;
     
-    private void TestBtn()
+    private async Task TestBtn()
     {
-        Random random = new Random();
-        _matchMakingService.AddToQueue(random.Next(0,100).ToString());
+        var userGuidLocalStorage = await _protectedLocalStorage.GetAsync<string>("user_id");
+        _matchMakingService.AddToQueue(userGuidLocalStorage.Value ?? "123", "М", "18", "Ж", "20");
         pair = _matchMakingService.SearchCommand();
     }
     
