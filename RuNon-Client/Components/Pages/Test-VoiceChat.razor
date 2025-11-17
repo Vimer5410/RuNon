@@ -1,9 +1,14 @@
 ﻿@page "/voice-chat"
 @using Microsoft.AspNetCore.SignalR.Client
+@using RuNon_Client.Services
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
+@inject MatchMakingService _matchMakingService
+@inject ProtectedLocalStorage _protectedLocalStorage
 @rendermode InteractiveServer
 @implements IAsyncDisposable
+
 
 <PageTitle>Voice Room</PageTitle>
 
@@ -36,6 +41,26 @@
                     <span> Войти в комнату</span>
                 }
             </button>
+            
+            <button @onclick="TestBtn"
+                    style="width: 100%; padding: 15px; background: #993eff; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;">
+                Search Partner
+            </button>
+            
+            <a>Введите ваш пол</a> 
+            <input @bind="userGender" />
+            <a>Введите ваш возраст</a> 
+            <input @bind="userAge" />
+            <a>Введите пол собеседника</a> 
+            <input @bind="searchGender" />
+            <a>Введите возраст собеседника</a> 
+            <input @bind="searchAge" />
+            
+            @if (!string.IsNullOrEmpty(pair.Item1))
+            {
+                <p>@pair</p>
+            }
+            
         </div>
     }
     else
@@ -76,6 +101,26 @@
     private bool isConnecting = false;
     private int participantCount = 1;
     private string errorMessage = "";
+    
+    //тестовая логика для матчмейкинга
+    
+    //====================================
+    
+    private (string?, string?) pair;
+    private string userGender="";
+    private string userAge="";
+    private string searchGender="";
+    private string searchAge="";
+    
+    private async Task TestBtn()
+    {
+        var userGuidLocalStorage = await _protectedLocalStorage.GetAsync<string>("user_id");
+        var userId = userGuidLocalStorage.Value;
+        _matchMakingService.AddToQueue(userId ?? "123", userGender, userAge, searchGender, searchAge);
+        pair = _matchMakingService.SearchCommand(userId);
+    }
+    
+    //====================================
     
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -242,4 +287,7 @@
         }
         dotNetRef?.Dispose();
     }
+
+    
+
 }
