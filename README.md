@@ -31,15 +31,21 @@ Key Features:
   
 - Adaptive UI: A responsive user interface (testing is not yet fully complete).
 
+- Matchmaking Algorithm: With parameters for gender preference and age range.
+
+- Voice Chat: Simple Voice Chat
+
+---
+(how the matchmaking algorithm works)
+<img width="1280" height="835" alt="image" src="https://github.com/user-attachments/assets/1fe31898-00e4-43f4-8309-14d3fb1580d0" />
+
 ---
 
 📅 Planned for Implementation
-
-- Matchmaking Algorithm: With parameters for gender preference and age range.
   
 - Optional Registration: Adding sign-up with phone number or email binding (pending final approval).
   
-- Voice Chat: Implementation of voice communication functionality.
+- Voice Chat: Implementation of voice communication functionality (noise reduction, volume control, auto-reconnection system, etc.).
   
 - Web-Based Admin Panel: An integrated administration panel within the web client for convenient moderation commands.
   
