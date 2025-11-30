@@ -93,10 +93,10 @@ public class MatchMakingService
         lock (_sync)
         {
             if (PeopleInQueue.Count<2)
-        {
-            Log.Information("[Match-Making] Недостаточно пользователей для поиска");
+            {
+                Log.Information("[Match-Making] Недостаточно пользователей для поиска");
             
-        }
+            }
         else
         {
             var seeker = PeopleInQueue.FirstOrDefault(e => e.userId == userID); //тот кто ищет
@@ -143,7 +143,7 @@ public class MatchMakingService
                     .Where(e => e.searchAge ==
                                 seeker.userAge); // проверяем что age seeker'a совпадает с age который искал мэтч
                 ;
-                Log.Information("[Match-Making] пользователи  идеально совпадают");
+                Log.Information("[Match-Making] пользователи идеально совпадают");
                     
             }
 

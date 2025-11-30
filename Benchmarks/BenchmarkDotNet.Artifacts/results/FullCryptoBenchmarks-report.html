@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8' />
+<title>FullCryptoBenchmarks-20251130-204313</title>
+
+<style type="text/css">
+	table { border-collapse: collapse; display: block; width: 100%; overflow: auto; }
+	td, th { padding: 6px 13px; border: 1px solid #ddd; text-align: right; }
+	tr { background-color: #fff; border-top: 1px solid #ccc; }
+	tr:nth-child(even) { background: #f8f8f8; }
+</style>
+</head>
+<body>
+<pre><code>
+BenchmarkDotNet v0.15.8, Windows 10 (10.0.19045.6456/22H2/2022Update)
+Intel Core i7-9700K CPU 3.60GHz (Coffee Lake), 1 CPU, 8 logical and 8 physical cores
+.NET SDK 9.0.301
+  [Host]     : .NET 9.0.6 (9.0.6, 9.0.625.26613), X64 RyuJIT x86-64-v3
+  DefaultJob : .NET 9.0.6 (9.0.6, 9.0.625.26613), X64 RyuJIT x86-64-v3
+</code></pre>
+<pre><code></code></pre>
+
+<table>
+<thead><tr><th>Method                     </th><th>Mean     </th><th>Error    </th><th>StdDev   </th><th>Rank</th><th>Gen0</th><th>Allocated</th>
+</tr>
+</thead><tbody><tr><td>&#39;Aes Encrypt Only&#39;</td><td>795.0 ns</td><td>2.14 ns</td><td>2.00 ns</td><td>1</td><td>0.0658</td><td>416 B</td>
+</tr><tr><td>&#39;Aes Encrypt With Key Generation&#39;</td><td>1,432.7 ns</td><td>3.22 ns</td><td>2.86 ns</td><td>2</td><td>0.1335</td><td>848 B</td>
+</tr><tr><td>&#39;Rsa Encrypt Only&#39;</td><td>16,899.9 ns</td><td>113.38 ns</td><td>100.51 ns</td><td>3</td><td>0.0305</td><td>280 B</td>
+</tr><tr><td>&#39;Rsa Encrypt With Key Generation&#39;</td><td>62,013,218.9 ns</td><td>1,822,215.67 ns</td><td>5,315,489.04 ns</td><td>4</td><td>-</td><td>2147 B</td>
+</tr></tbody></table>
+</body>
+</html>

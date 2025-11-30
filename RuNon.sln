@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RuNon-Client", "RuNon-Client\RuNon-Client.csproj", "{C657C4DB-B545-4D97-8103-C825F9780162}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benchmarks", "Benchmarks\Benchmarks.csproj", "{302C83C8-FCAA-4E58-9B11-A691D4DC0C5A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{C657C4DB-B545-4D97-8103-C825F9780162}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C657C4DB-B545-4D97-8103-C825F9780162}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C657C4DB-B545-4D97-8103-C825F9780162}.Release|Any CPU.Build.0 = Release|Any CPU
+		{302C83C8-FCAA-4E58-9B11-A691D4DC0C5A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{302C83C8-FCAA-4E58-9B11-A691D4DC0C5A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{302C83C8-FCAA-4E58-9B11-A691D4DC0C5A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{302C83C8-FCAA-4E58-9B11-A691D4DC0C5A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
