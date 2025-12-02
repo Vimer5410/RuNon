@@ -17,6 +17,24 @@
         }
     },
 
+    async leaveRoom() {
+        console.log("[JS] Выход из комнаты...");
+
+        // отключаем микрофон
+        if (this.localStream) {
+            this.localStream.getTracks().forEach(track => track.stop());
+            this.localStream = null;
+        }
+
+        // закрываем соединение
+        Object.keys(this.connections).forEach(userId => {
+            this.connections[userId].close();
+            const audio = document.getElementById('remote-audio-' + userId);
+            if (audio) audio.remove();
+        });
+        this.connections = {};
+    },
+
     async createConnectionForUser(userId, dotNetRef) {
         console.log("[JS] Создание connection для", userId);
 
@@ -180,7 +198,7 @@
             this.connections[userId].close();
             delete this.connections[userId];
         }
-
+        
         const audio = document.getElementById('remote-audio-' + userId);
         if (audio) {
             audio.remove();

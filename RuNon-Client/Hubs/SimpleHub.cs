@@ -88,6 +88,13 @@ public class SimpleHub : Hub
         // закидываю уведы
         await Clients.OthersInGroup(ROOM_NAME).SendAsync("UserJoined", Context.ConnectionId);
     }
+    
+    public async Task LeaveRoom()
+    {
+        Console.WriteLine($"[Hub] {Context.ConnectionId} покинул комнату");
+        await Clients.OthersInGroup(ROOM_NAME).SendAsync("UserLeft", Context.ConnectionId);
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, ROOM_NAME);
+    }
         
     public async Task SendOfferToRoom(string offer)
     {

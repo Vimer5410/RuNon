@@ -99,7 +99,7 @@
     private DotNetObjectReference<Test_VoiceChat> dotNetRef;
     private bool inRoom = false;
     private bool isConnecting = false;
-    private int participantCount = 1;
+    private int participantCount;
     private string errorMessage = "";
     
     //тестовая логика для матчмейкинга
@@ -223,6 +223,7 @@
             // Передаём dotNetRef в JS
             await JSRuntime.InvokeVoidAsync("VoiceChat.joinRoom", dotNetRef);
             inRoom = true;
+            participantCount = ++participantCount;
             Console.WriteLine("[C#] Успешно вошли в комнату!");
         }
         catch (Exception ex)
@@ -237,12 +238,24 @@
         }
     }
     
-    private void LeaveRoom()
-    {
-        inRoom = false;
-        participantCount = 1;
+    private async Task LeaveRoom() {
+        try {
+            if (hubConnection?.State == HubConnectionState.Connected) {
+                await hubConnection.InvokeAsync("LeaveRoom"); 
+            } //уведомляем сервер о выходе
+        
+            //останавливаем входящие/исходящие аудио стримы
+            await JSRuntime.InvokeVoidAsync("VoiceChat.leaveRoom");
+        
+            inRoom = false;
+            participantCount = --participantCount;
+        } catch (Exception ex) {
+            Console.WriteLine($"[C#] Ошибка при выходе: {ex.Message}");
+            errorMessage = $"Не удалось выйти из комнаты: {ex.Message}";  
+        } finally {
+            StateHasChanged();
+        }
     }
-    
     
     [JSInvokable]
     public async Task JoinRoomOnServer()
