@@ -2,7 +2,7 @@
 <html lang='en'>
 <head>
 <meta charset='utf-8' />
-<title>FullCryptoBenchmarks-20251130-204313</title>
+<title>FullCryptoBenchmarks-20251206-162826</title>
 
 <style type="text/css">
 	table { border-collapse: collapse; display: block; width: 100%; overflow: auto; }
@@ -22,12 +22,18 @@ Intel Core i7-9700K CPU 3.60GHz (Coffee Lake), 1 CPU, 8 logical and 8 physical c
 <pre><code></code></pre>
 
 <table>
-<thead><tr><th>Method                     </th><th>Mean     </th><th>Error    </th><th>StdDev   </th><th>Rank</th><th>Gen0</th><th>Allocated</th>
+<thead><tr><th>Method                               </th><th>Mean  </th><th>Error </th><th>StdDev</th><th>Rank</th><th>Gen0</th><th>Gen1</th><th>Gen2</th><th>Allocated</th>
 </tr>
-</thead><tbody><tr><td>&#39;Aes Encrypt Only&#39;</td><td>795.0 ns</td><td>2.14 ns</td><td>2.00 ns</td><td>1</td><td>0.0658</td><td>416 B</td>
-</tr><tr><td>&#39;Aes Encrypt With Key Generation&#39;</td><td>1,432.7 ns</td><td>3.22 ns</td><td>2.86 ns</td><td>2</td><td>0.1335</td><td>848 B</td>
-</tr><tr><td>&#39;Rsa Encrypt Only&#39;</td><td>16,899.9 ns</td><td>113.38 ns</td><td>100.51 ns</td><td>3</td><td>0.0305</td><td>280 B</td>
-</tr><tr><td>&#39;Rsa Encrypt With Key Generation&#39;</td><td>62,013,218.9 ns</td><td>1,822,215.67 ns</td><td>5,315,489.04 ns</td><td>4</td><td>-</td><td>2147 B</td>
+</thead><tbody><tr><td>&#39;Rsa Encrypt Only&#39;</td><td>17.60 &mu;s</td><td>0.328 &mu;s</td><td>0.459 &mu;s</td><td>1</td><td>0.0305</td><td>-</td><td>-</td><td>280 B</td>
+</tr><tr><td>&#39;ECDH Encrypt Only&#39;</td><td>1,016.88 &mu;s</td><td>19.391 &mu;s</td><td>17.190 &mu;s</td><td>2</td><td>-</td><td>-</td><td>-</td><td>777 B</td>
+</tr><tr><td>&#39;HPKE AES+RSA Encrypt Only&#39;</td><td>1,243.47 &mu;s</td><td>3.647 &mu;s</td><td>3.233 &mu;s</td><td>3</td><td>248.0469</td><td>248.0469</td><td>248.0469</td><td>1051355 B</td>
+</tr><tr><td>&#39;Aes Encrypt With Key Generation&#39;</td><td>1,273.82 &mu;s</td><td>18.367 &mu;s</td><td>16.282 &mu;s</td><td>3</td><td>248.0469</td><td>248.0469</td><td>248.0469</td><td>1051410 B</td>
+</tr><tr><td>&#39;Aes Encrypt Only&#39;</td><td>1,343.73 &mu;s</td><td>23.611 &mu;s</td><td>20.931 &mu;s</td><td>4</td><td>248.0469</td><td>248.0469</td><td>248.0469</td><td>1051004 B</td>
+</tr><tr><td>&#39;HPKE AES+ECDH Encrypt Only&#39;</td><td>2,270.10 &mu;s</td><td>4.946 &mu;s</td><td>4.385 &mu;s</td><td>5</td><td>246.0938</td><td>246.0938</td><td>246.0938</td><td>1052070 B</td>
+</tr><tr><td>&#39;HPKE AES+ECDH Encrypt With Key Generation&#39;</td><td>4,572.87 &mu;s</td><td>16.318 &mu;s</td><td>14.465 &mu;s</td><td>6</td><td>242.1875</td><td>242.1875</td><td>242.1875</td><td>1054138 B</td>
+</tr><tr><td>&#39;ECDH Encrypt With Key Generation&#39;</td><td>5,849.60 &mu;s</td><td>7.692 &mu;s</td><td>6.424 &mu;s</td><td>7</td><td>-</td><td>-</td><td>-</td><td>2893 B</td>
+</tr><tr><td>&#39;HPKE AES+RSA Encrypt With Key Generation&#39;</td><td>62,924.36 &mu;s</td><td>1,844.895 &mu;s</td><td>5,381.644 &mu;s</td><td>8</td><td>125.0000</td><td>125.0000</td><td>125.0000</td><td>1052606 B</td>
+</tr><tr><td>&#39;Rsa Encrypt With Key Generation&#39;</td><td>63,014.30 &mu;s</td><td>1,659.558 &mu;s</td><td>4,814.679 &mu;s</td><td>8</td><td>-</td><td>-</td><td>-</td><td>2144 B</td>
 </tr></tbody></table>
 </body>
 </html>
