@@ -3,7 +3,7 @@
 
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
-@* Blazor компонент анонимного чата с фильтрами поиска - оптимизированная версия *@
+
 
 <div class="chat-container">
     @* Заголовок приложения *@
@@ -16,27 +16,7 @@
     </div>
 
     @* Статус подключения *@
-    <div class="status-card">
-        <div class="connection-status">
-            @{
-                string statusClass = "status-disconnected";
-                string statusText = "Отключен";
-                string statusIcon = "fa-wifi-slash";
-            }
-            <div class="status-indicator @statusClass"></div>
-            <div class="status-info">
-                <i class="fas @statusIcon"></i>
-                <span>@statusText</span>
-            </div>
-        </div>
-        
-        <div class="connection-info">
-            <div class="connection-label">
-                <i class="fas fa-id-card"></i>
-                Ваш ID: <code class="connection-id">@(connectionId ?? "Не подключен")</code>
-            </div>
-        </div>
-    </div>
+    
 
     @* Основная сетка с фильтрами *@
     <div class="main-grid">
@@ -57,13 +37,13 @@
                             <input type="radio" name="myGender" value="male" @onchange="@((e) => myGender = e.Value.ToString())">
                             <span class="radio-custom"></span>
                             <i class="fas fa-mars gender-icon male"></i>
-                            Мужской
+                            М
                         </label>
                         <label class="radio-option">
                             <input type="radio" name="myGender" value="female" @onchange="@((e) => myGender = e.Value.ToString())">
                             <span class="radio-custom"></span>
                             <i class="fas fa-venus gender-icon female"></i>
-                            Женский
+                            Ж
                         </label>
                     </div>
                 </div>
@@ -87,22 +67,16 @@
                     <label class="filter-label">Пол собеседника:</label>
                     <div class="radio-group">
                         <label class="radio-option">
-                            <input type="radio" name="targetGender" value="any" @onchange="@((e) => targetGender = e.Value.ToString())" checked>
-                            <span class="radio-custom"></span>
-                            <i class="fas fa-users gender-icon any"></i>
-                            Любой
-                        </label>
-                        <label class="radio-option">
                             <input type="radio" name="targetGender" value="male" @onchange="@((e) => targetGender = e.Value.ToString())">
                             <span class="radio-custom"></span>
                             <i class="fas fa-mars gender-icon male"></i>
-                            Мужской
+                            М
                         </label>
                         <label class="radio-option">
                             <input type="radio" name="targetGender" value="female" @onchange="@((e) => targetGender = e.Value.ToString())">
                             <span class="radio-custom"></span>
                             <i class="fas fa-venus gender-icon female"></i>
-                            Женский
+                            Ж
                         </label>
                     </div>
                 </div>

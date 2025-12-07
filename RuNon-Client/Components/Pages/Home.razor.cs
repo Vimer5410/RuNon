@@ -111,7 +111,7 @@ public partial class Home:ComponentBase
             }); 
         });
     
-    interviewerСlientID= hubConnection.ConnectionId;
+
     yourClientID = hubConnection.ConnectionId;
     
     await hubConnection.InvokeAsync("GetPublicKey");
