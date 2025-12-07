@@ -101,6 +101,15 @@ public partial class Home:ComponentBase
         });
     });
     
+    hubConnection.On("LeaveFromRoom", () => 
+    {
+        InvokeAsync(async () =>
+        {
+            await DisconnectFromPartner();
+            
+        }); 
+    });
+    
     hubConnection.On<string>("ReceivePublicKey", (publicKey) => 
     {
         InvokeAsync(() =>
@@ -126,10 +135,15 @@ public partial class Home:ComponentBase
     {
         if (firstRender)
         {
-            await Task.Delay(3000);
+            await Task.Delay(5000);
             Console.WriteLine($"После задержки, userIp = {userIp}");
             await CreateOrIdentify();
             StateHasChanged();
+            if (isUserBanned)
+            {
+                StopSearch();
+                DisconnectFromPartner();
+            }
         }
     }
     
@@ -141,6 +155,7 @@ public partial class Home:ComponentBase
             Console.ForegroundColor = ConsoleColor.Red;
             SendTestMessage();
             Console.WriteLine("ВЫ НАЖАЛИ ENTER");
+            Console.ForegroundColor = ConsoleColor.DarkGray;
             messagetext = "";
         }
     }

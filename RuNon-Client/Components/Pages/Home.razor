@@ -3,264 +3,324 @@
 @using RuNon_Client.Services
 
 @using RuNon_Client.Components.Pages 
-
+@implements IAsyncDisposable
 @inject MatchMakingService _matchMakingService
 
 @rendermode InteractiveServer
 
+
+
 <div class="chat-container">
-    @* проверка на бан хы *@
-    @if (isUserBanned)
-    {
-        <div class="banned-alert">
-            <h2>Доступ ограничен</h2>
-            <p>Ваш аккаунт заблокирован. IP: @userIp</p>
-            @if (ShowToast)
-            {
-                <div class="toast">Заявка отправлена</div>
-            }
-            <button class="search-btn secondary" @onclick="BanSendTechSupport_Btn">Написать в поддержку</button>
-        </div>
-    }
-    else
-    {
-        @* Заголовок приложения *@
-        <div class="header-section">
-            <h1 class="header-title">
-                <i class="fas fa-user-secret"></i>
-                Анонимный Чат
-            </h1>
-            <div class="header-subtitle">Найди собеседника по интересам</div>
-        </div>
-
-        @* статус подключения *@
-        <div class="status-card">
-            <div class="connection-status">
-                @{
-                    var state = hubConnection?.State;
-                    string statusClass = state == HubConnectionState.Connected ? "status-connected" :
-                    state == HubConnectionState.Connecting ? "status-connecting" : "status-disconnected";
-                    string statusText = state == HubConnectionState.Connected ? "Подключен" :
-                    state == HubConnectionState.Connecting ? "Подключение..." : "Отключен";
-                    string statusIcon = state == HubConnectionState.Connected ? "fa-wifi" :
-                    state == HubConnectionState.Connecting ? "fa-spinner fa-spin" : "fa-wifi-slash";
-                }
-                <div class="status-indicator @statusClass"></div>
-                <div class="status-info">
-                    <i class="fas @statusIcon"></i>
-                    <span>@statusText</span>
-                </div>
+    @* Заголовок приложения *@
+            <div class="header-section">
+                <h1 class="header-title">
+                    <i class="fas fa-user-secret"></i>
+                    Анонимный Чат
+                </h1>
+                <div class="header-subtitle">Найди собеседника по интересам</div>
             </div>
-
-            <div class="connection-info">
-                <div class="connection-label">
-                    <i class="fas fa-id-card"></i>
-                    Ваш ID: <code class="connection-id">@(yourClientID ?? "Не подключен")</code>
-                </div>
-                @if (!string.IsNullOrEmpty(userIp))
-                {
-                     <div style="font-size: 0.8em; color: #666; margin-top: 5px;">IP: @userIp</div>
-                }
-            </div>
-        </div>
-
-        @* Основная сетка *@
-        <div class="main-grid">
-            @* панель фильтров  *@
-            <div class="filters-panel">
-                <div class="panel-header">
-                    <i class="fas fa-search"></i>
-                    <h3>Поиск собеседника</h3>
-                </div>
-
-                <div class="filter-section">
-                    <div class="section-title">Мои данные</div>
-
-                    <div class="filter-group">
-                        <label class="filter-label">Мой пол:</label>
-                        <div class="radio-group">
-                            <label class="radio-option">
-                                <input type="radio" name="myGender" value="male" checked="@(myGender == "male")" @onchange="@((e) => myGender = "male")">
-                                <span class="radio-custom"></span>
-                                <i class="fas fa-mars gender-icon male"></i>
-                                М
-                            </label>
-                            <label class="radio-option">
-                                <input type="radio" name="myGender" value="female" checked="@(myGender == "female")" @onchange="@((e) => myGender = "female")">
-                                <span class="radio-custom"></span>
-                                <i class="fas fa-venus gender-icon female"></i>
-                                Ж
-                            </label>
-                        </div>
+    
+            @* статус подключения *@
+            <div class="status-card">
+                <div class="connection-status">
+                    @{
+                        var state = hubConnection?.State;
+                        
+                        string statusClass = state == HubConnectionState.Connected ? "status-connected" :
+                        state == HubConnectionState.Connecting ? "status-connecting" : "status-disconnected";
+                        
+                        string statusText = state == HubConnectionState.Connected ? "Подключен" :
+                        state == HubConnectionState.Connecting ? "Подключение..." : "Отключен";
+                        
+                        string statusIcon = state == HubConnectionState.Connected ? "fa-wifi" :
+                        state == HubConnectionState.Connecting ? "fa-spinner fa-spin" : "fa-wifi-slash";
+                    }
+                    <div class="status-indicator @statusClass"></div>
+                    <div class="status-info">
+                        <i class="fas @statusIcon"></i>
+                        <span>@statusText</span>
                     </div>
-
-                    <div class="filter-group">
-                        <label class="filter-label">Мой возраст:</label>
-                        <select class="filter-select" @onchange="@((e) => myAge = int.Parse(e.Value.ToString()))">
-                            <option value="0">Не указан</option>
-                            @for (int i = 16; i <= 60; i++)
+                </div>
+    
+                <div class="connection-info">
+                    <div class="connection-label">
+                        <i class="fas fa-id-card"></i>
+                        Ваш ID: <code class="connection-id">@(yourClientID ?? "Не подключен")</code>
+                    </div>
+                    @if (!string.IsNullOrEmpty(userIp))
+                    {
+                         <div style="font-size: 0.8em; color: #666; margin-top: 5px;">IP: @userIp</div>
+                    }
+                </div>
+            </div>
+    
+            @* Основная сетка *@
+    <div class="main-grid">
+        @* панель фильтров  *@
+        <div class="filters-panel">
+            <div class="panel-header">
+                <i class="fas fa-search"></i>
+                <h3>Поиск собеседника</h3>
+            </div>
+    
+            <div class="filter-section">
+                <div class="section-title">Мои данные</div>
+    
+                <div class="filter-group">
+                    <label class="filter-label">Мой пол:</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="myGender" value="male" checked="@(myGender == "male")" @onchange="@((e) => myGender = "male")">
+                            <span class="radio-custom"></span>
+                            <i class="fas fa-mars gender-icon male"></i>
+                            М
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="myGender" value="female" checked="@(myGender == "female")" @onchange="@((e) => myGender = "female")">
+                            <span class="radio-custom"></span>
+                            <i class="fas fa-venus gender-icon female"></i>
+                            Ж
+                        </label>
+                    </div>
+                </div>
+    
+                <div class="filter-group">
+                    <label class="filter-label">Мой возраст:</label>
+                    <select class="filter-select" @onchange="@((e) => myAge = int.Parse(e.Value.ToString()))">
+                        <option value="0">Не указан</option>
+                        @for (int i = 16; i <= 60; i++)
+                        {
+                            <option value="@i">@i лет</option>
+                        }
+                    </select>
+                </div>
+            </div>
+    
+            <div class="filter-section">
+                <div class="section-title">Ищу собеседника</div>
+                <div class="filter-group">
+                    <label class="filter-label">Пол собеседника:</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="targetGender" value="male" checked="@(targetGender == "male")" @onchange="@((e) => targetGender = "male")">
+                            <span class="radio-custom"></span>
+                            <i class="fas fa-mars gender-icon male"></i>
+                            М
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="targetGender" value="female" checked="@(targetGender == "female")" @onchange="@((e) => targetGender = "female")">
+                            <span class="radio-custom"></span>
+                            <i class="fas fa-venus gender-icon female"></i>
+                            Ж
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="targetGender" value="any" checked="@(targetGender == "any")" @onchange="@((e) => targetGender = "any")">
+                            <span class="radio-custom"></span>
+                            <i class="fas fa-users gender-icon"></i>
+                            Любой
+                        </label>
+                    </div>
+                </div>
+    
+                <div class="filter-group">
+                    <label class="filter-label">Возраст собеседника:</label>
+                    <div class="age-range">
+                        <select class="filter-select small" @onchange="@((e) => minAge = int.Parse(e.Value.ToString()))">
+                            <option value="16">16+</option>
+                            @for (int i = 18; i <= 60; i += 2)
                             {
-                                <option value="@i">@i лет</option>
+                                <option value="@i">@i+</option>
+                            }
+                        </select>
+                        <span class="age-separator">до</span>
+                        <select class="filter-select small" @onchange="@((e) => maxAge = int.Parse(e.Value.ToString()))">
+                            <option value="60">60</option>
+                            @for (int i = 20; i <= 60; i += 2)
+                            {
+                                <option value="@i">@i</option>
                             }
                         </select>
                     </div>
                 </div>
-
-                <div class="filter-section">
-                    <div class="section-title">Ищу собеседника</div>
-                    <div class="filter-group">
-                        <label class="filter-label">Пол собеседника:</label>
-                        <div class="radio-group">
-                            <label class="radio-option">
-                                <input type="radio" name="targetGender" value="male" checked="@(targetGender == "male")" @onchange="@((e) => targetGender = "male")">
-                                <span class="radio-custom"></span>
-                                <i class="fas fa-mars gender-icon male"></i>
-                                М
-                            </label>
-                            <label class="radio-option">
-                                <input type="radio" name="targetGender" value="female" checked="@(targetGender == "female")" @onchange="@((e) => targetGender = "female")">
-                                <span class="radio-custom"></span>
-                                <i class="fas fa-venus gender-icon female"></i>
-                                Ж
-                            </label>
-                            <label class="radio-option">
-                                <input type="radio" name="targetGender" value="any" checked="@(targetGender == "any")" @onchange="@((e) => targetGender = "any")">
-                                <span class="radio-custom"></span>
-                                <i class="fas fa-users gender-icon"></i>
-                                Любой
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="filter-group">
-                        <label class="filter-label">Возраст собеседника:</label>
-                        <div class="age-range">
-                            <select class="filter-select small" @onchange="@((e) => minAge = int.Parse(e.Value.ToString()))">
-                                <option value="16">16+</option>
-                                @for (int i = 18; i <= 60; i += 2)
-                                {
-                                    <option value="@i">@i+</option>
-                                }
-                            </select>
-                            <span class="age-separator">до</span>
-                            <select class="filter-select small" @onchange="@((e) => maxAge = int.Parse(e.Value.ToString()))">
-                                <option value="60">60</option>
-                                @for (int i = 20; i <= 60; i += 2)
-                                {
-                                    <option value="@i">@i</option>
-                                }
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="search-actions">
-                    
-                    <button class="search-btn primary" @onclick="StartSearch" disabled="@(isSearching || !string.IsNullOrEmpty(interviewerСlientID))">
-                        <i class="fas fa-search"></i>
-                        Начать поиск
-                    </button>
-                    
-                    <button class="search-btn secondary" @onclick="StopSearch" disabled="@(!isSearching)">
-                        <i class="fas fa-stop"></i>
-                        Остановить
-                    </button>
-                </div>
-
-                @if (isSearching)
-                {
-                    <div class="search-status">
-                        <div class="search-animation">
-                            <div class="search-dot"></div>
-                            <div class="search-dot"></div>
-                            <div class="search-dot"></div>
-                        </div>
-                        <div class="search-text">Ищем собеседника...</div>
-                    </div>
-                }
             </div>
-
-            @* основная область чата *@
-            <div class="chat-area">
-                @* если interviewerСlientID (из бэкенда) заполнен - значит чат идет *@
-                @if (!string.IsNullOrEmpty(interviewerСlientID))
-                {
-                    @* информация о текущем собеседнике *@
-                    <div class="partner-info">
-                        <div class="partner-avatar">
-                             @* логика иконки простая, так как бэкенд не хранит пол собеседника, ставим нейтральную или по фильтру *@
-                            <i class="fas fa-user-secret"></i>
+    
+            <div class="search-actions">
+                        
+                <button class="search-btn primary" @onclick="StartSearch" disabled="@(!(hubConnection?.State == HubConnectionState.Connected))">
+                    <i class="fas fa-search"></i>
+                    Начать поиск
+                </button>
+                        
+                <button class="search-btn secondary" @onclick="StopSearch" disabled="@(!isSearching)">
+                    <i class="fas fa-stop"></i>
+                    Остановить
+                </button>
+            </div>
+    
+            @if (isSearching)
+            {
+                <div class="search-status">
+                    <div class="search-animation">
+                        <div class="search-dot"></div>
+                        <div class="search-dot"></div>
+                        <div class="search-dot"></div>
+                    </div>
+                    <div class="search-text">Ищем собеседника...</div>
+                </div>
+            }
+        </div>
+    
+        @* основная область чата *@
+        <div class="chat-area">
+            @* если interviewerСlientID (из бэкенда) заполнен - значит чат идет *@
+            @if (!string.IsNullOrEmpty(interviewerСlientID))
+            {
+                        @* информация о текущем собеседнике *@
+                <div class="partner-info">
+                    <div class="partner-avatar">
+                        @* логика иконки простая, так как бэкенд не хранит пол собеседника, ставим нейтральную или по фильтру *@
+                        <i class="fas fa-user-secret"></i>
+                    </div>
+                    <div class="partner-details">
+                        <div class="partner-name">Собеседник найден!</div>
+                        <div class="partner-stats">
+                            ID: @interviewerСlientID
                         </div>
-                        <div class="partner-details">
-                            <div class="partner-name">Собеседник найден!</div>
-                            <div class="partner-stats">
-                                ID: @interviewerСlientID.Substring(0, Math.Min(8, interviewerСlientID.Length))...
+                    </div>
+                    <button class="disconnect-btn" @onclick="DisconnectFromPartner" title="Завершить диалог">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+    
+                        @* область сообщений *@
+                <div class="messages-area">
+                    @if (receiveUserMessage != null && receiveUserMessage.Any())
+                    {
+                        @foreach (var messageTuple in receiveUserMessage)
+                        {
+                            <div class="message @(messageTuple.isMine ? "my-message" : "partner-message")">
+                                <div class="message-content">
+                                    @messageTuple.message
+                                </div>
+                                        
                             </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="chat-start">
+                            <i class="fas fa-comments"></i>
+                            <p>Диалог начат! Напишите первое сообщение.</p>
                         </div>
-                        <button class="disconnect-btn" @onclick="DisconnectFromPartner" title="Завершить диалог">
-                            <i class="fas fa-times"></i>
+                    }
+                </div>
+    
+                
+                @* поле ввода сообщения: Привязываем к messagetext из БЭКЕНДА *@
+                <div class="message-input-area">
+                    <div class="input-group">
+                        <input type="text"
+                               class="message-input"
+                               placeholder="Введите сообщение..."
+                               @bind="messagetext" 
+                               @onkeyup="EnterKeyDown"
+                               @bind:event="oninput">
+                                
+                                
+                        <button class="send-btn"
+                                @onclick="SendTestMessage"
+                                disabled="@(string.IsNullOrWhiteSpace(messagetext))">
+                            <i class="fas fa-paper-plane"></i>
                         </button>
                     </div>
+                </div>
+            }
+            else
+            {
+                
+                @* состояние без активного чата *@
+                <div class="no-chat-state">
+                    <div class="no-chat-icon">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <div class="no-chat-title">Готов к общению?</div>
+                    <div class="no-chat-description">
+                        Заполните фильтры поиска и нажмите "Начать поиск"
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
 
-                    @* область сообщений *@
-                    <div class="messages-area">
-                        @if (receiveUserMessage != null && receiveUserMessage.Any())
-                        {
-                            @foreach (var messageTuple in receiveUserMessage)
-                            {
-                                <div class="message @(messageTuple.isMine ? "my-message" : "partner-message")">
-                                    <div class="message-content">
-                                        @messageTuple.message
-                                    </div>
-                                    
-                                </div>
-                            }
-                        }
-                        else
-                        {
-                            <div class="chat-start">
-                                <i class="fas fa-comments"></i>
-                                <p>Диалог начат! Напишите первое сообщение.</p>
-                            </div>
-                        }
-                    </div>
 
-                    @* поле ввода сообщения: Привязываем к messagetext из БЭКЕНДА *@
-                    <div class="message-input-area">
-                        <div class="input-group">
-                            <input type="text"
-                                   class="message-input"
-                                   placeholder="Введите сообщение..."
-                                   @bind="messagetext" 
-                                   @onkeypress="@((e) => { if (e.Key == "Enter") SendTestMessage(); })"
-                                   @bind:event="oninput">
-                            
-                            
-                            <button class="send-btn"
-                                    @onclick="SendTestMessage"
-                                    disabled="@(string.IsNullOrWhiteSpace(messagetext))">
-                                <i class="fas fa-paper-plane"></i>
-                            </button>
+@if (isUserBanned)
+{
+    <div class="ban-system-overlay">
+        <div class="ban-system-modal">
+            <div class="ban-system-header">
+                <div class="ban-system-icon">
+                    <i class="fas fa-ban"></i>
+                </div>
+                <h2 class="ban-system-title">Доступ ограничен</h2>
+                <div class="ban-system-subtitle">Ваш аккаунт был заблокирован администрацией</div>
+            </div>
+            
+            <div class="ban-system-content">
+                <div class="ban-system-info-card">
+                    <div class="ban-system-detail">
+                        <div class="ban-system-detail-label">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Причина блокировки:
                         </div>
+                        <div class="ban-system-detail-value">Нарушение правил сообщества</div>
                     </div>
-                }
-                else
-                {
-                    @* состояние без активного чата *@
-                    <div class="no-chat-state">
-                        <div class="no-chat-icon">
-                            <i class="fas fa-user-plus"></i>
+                    
+                    <div class="ban-system-detail">
+                        <div class="ban-system-detail-label">
+                            <i class="fas fa-clock"></i>
+                            Дата блокировки:
                         </div>
-                        <div class="no-chat-title">Готов к общению?</div>
-                        <div class="no-chat-description">
-                            Заполните фильтры поиска и нажмите "Начать поиск"
-                        </div>
+                        <div class="ban-system-detail-value">-----</div>
                     </div>
-                }
+                    
+                    <div class="ban-system-detail">
+                        <div class="ban-system-detail-label">
+                            <i class="fas fa-id-card"></i>
+                            Ваш ID:
+                        </div>
+                        <div class="ban-system-detail-value">@yourClientID</div>
+                    </div>
+                </div>
+                
+                <div class="ban-system-message">
+                    <p>К сожалению, вы не можете участвовать в чате. Если считаете, что это ошибка, обратитесь в техподдержку.</p>
+                </div>
+                
+                <div class="ban-system-actions">
+                    <button class="ban-system-btn ban-system-secondary" @onclick="BanReboot_Btn">
+                        <i class="fas fa-sync-alt"></i>
+                        Перезагрузить
+                    </button>
+                    <button class="ban-system-btn ban-system-primary" @onclick="BanSendTechSupport_Btn">
+                        <i class="fas fa-headset"></i>
+                        Техподдержка
+                    </button>
+                </div>
             </div>
         </div>
-    }
+    </div>
+}
+
+@* Toast уведомление *@
+<div class="toast-container @(ShowToast ? "show" : "")">
+    <div class="toast-message">
+        <i class="fas fa-check-circle"></i>
+        ✅ Ваша заявка принята
+    </div>
 </div>
+
+
 
 @code {
     private string myGender = "male";
@@ -275,7 +335,7 @@
     //матчмейкинг
     private (string?, string?) pair;
     
-    
+   
     private async Task StartSearch()
     {
         // проверяем что нельзя начать поиск без своего ID
@@ -309,18 +369,28 @@
         
     }
 
+    // останавливаем поиск
     private async Task StopSearch()
     {
         isSearching = false;
-        
     }
 
-    private void DisconnectFromPartner()
+    // выходим из чата с собеседником
+    private async Task DisconnectFromPartner()
     {
-        
+        await hubConnection.InvokeAsync("NotifyOfLeave", interviewerСlientID);
         interviewerСlientID = null;
-        
         receiveUserMessage.Clear();
         isSearching = false;
+        StateHasChanged();
+    }
+    
+    // при перезагрузки страницы оффаем SignalR подключение
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
     }
 }

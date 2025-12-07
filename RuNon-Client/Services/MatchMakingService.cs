@@ -41,7 +41,7 @@ public class MatchMakingService
                 {
                     LesbiansPairs.Add(user);
                 }
-                else if (UserGender=="male"  && SearchGender=="female")
+                else if (UserGender=="male"  && SearchGender=="male")
                 {
                     GayPairs.Add(user);
                 }
@@ -136,6 +136,7 @@ public class MatchMakingService
 
             var extraMatch = basedMatch;
            
+            //самый идеальный мэтч ищется первые 60 секунд, после этого ищем первого подходящего по гендеру собеседника
             if (TimeInQueue<=60)
             {
                 extraMatch = basedMatch
@@ -145,7 +146,7 @@ public class MatchMakingService
                 
             }
 
-           var match = extraMatch.FirstOrDefault();
+            var match = extraMatch.FirstOrDefault();
            
             if (match.Item1 != null)
             {
