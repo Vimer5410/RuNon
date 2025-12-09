@@ -107,12 +107,28 @@ public class SimpleHub : Hub
         Console.WriteLine($"[Hub] {Context.ConnectionId} отправил ICE к {targetId}");
         await Clients.Client(targetId).SendAsync("ReceiveIceCandidate", candidate);
     }
-        
+    
+    
+    // апдейтим лог при отключении нового клиента    
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         Console.WriteLine($"[Hub] {Context.ConnectionId} отключился");
         await Clients.OthersInGroup(ROOM_NAME).SendAsync("UserLeft", Context.ConnectionId);
         await base.OnDisconnectedAsync(exception);
+    }
+
+    
+    // апдейтим лог при подключении нового клиента
+    public override Task OnConnectedAsync()
+    {
+        Console.WriteLine($"[Hub] {Context.ConnectionId} подключился");
+        return base.OnConnectedAsync();
+    }
+    
+    
+    public async Task NotifyOfLeave(string partnerConnectionId)
+    {
+        await Clients.Client(partnerConnectionId).SendAsync("LeaveFromRoom");
     }
 }
     

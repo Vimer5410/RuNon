@@ -1,4 +1,5 @@
 using Serilog;
+using System.Collections.Concurrent;
 
 namespace RuNon_Client.Services;
 
@@ -6,10 +7,14 @@ public class MatchMakingService
 {
     private static readonly object _sync = new object();
     
+    //словарь для хранения уведомлений о найденных парах.
+    // ключ: ID пользователя, который был найден (пассивный). 
+    //значение: ID того, кто его нашел (активный).
+    private static readonly ConcurrentDictionary<string, string> _completedMatches = new();
+
     public static List<(string userId, DateTime, string userGender, string userAge, string searchGender, string searchAge)>? PeopleInQueue = 
         new List<(string, DateTime,string, string, string, string)>();
     
-    public static (string?, string?) pair;
     
     private static List<(string, DateTime, string, string, string, string)>? GayPairs = new(); // М ищет М
     
@@ -25,23 +30,26 @@ public class MatchMakingService
         var user = ( userId, DateTime.Now, UserGender,  UserAge,  SearchGender, SearchAge);
         lock (_sync)
         {
+            // Проверка на дублирование, если пользователь уже есть
+            if (PeopleInQueue.Any(x => x.userId == userId)) return;
+
             PeopleInQueue.Add(user);
             
             try
             {
-                if (UserGender=="М"  && SearchGender=="Ж")
+                if (UserGender=="male"  && SearchGender=="female")
                 {   
                     Getero_Male_to_Female.Add(user);
                 }
-                else if (UserGender=="Ж"  && SearchGender=="М")
+                else if (UserGender=="female"  && SearchGender=="male")
                 {
                     Getero_Female_to_Male.Add(user);
                 }
-                else if (UserGender=="Ж"  && SearchGender=="Ж")
+                else if (UserGender=="female"  && SearchGender=="female")
                 {
                     LesbiansPairs.Add(user);
                 }
-                else if (UserGender=="М"  && SearchGender=="М")
+                else if (UserGender=="male"  && SearchGender=="male")
                 {
                     GayPairs.Add(user);
                 }
@@ -89,33 +97,46 @@ public class MatchMakingService
 
     public (string?, string?) SearchCommand(string userID)
     {
-
-        lock (_sync)
+        // проверка потового ящика
+        if (_completedMatches.TryRemove(userID, out var activePartnerID))
         {
-            if (PeopleInQueue.Count<2)
-            {
-                Log.Information("[Match-Making] Недостаточно пользователей для поиска");
-            
-            }
-        else
+            Log.Information($"[Match-Making] {userID} (пассивный) уведомлен о матче с {activePartnerID}");
+            // возвращаем пару(мой айди + айди того кто меня нашел)
+            return (userID, activePartnerID);
+        }
+
+        // активный поиск
+        lock (_sync)
         {
             var seeker = PeopleInQueue.FirstOrDefault(e => e.userId == userID); //тот кто ищет
             
+            if (seeker.userId == null) 
+            {
+                 // я не в очереди и не в почтовом ящике 
+                 return (null, null); 
+            }
+
+            if (PeopleInQueue.Count<2)
+            {
+                Log.Information("[Match-Making] Недостаточно пользователей для поиска");
+                return (null, null);
+            }
+            
             List<(string userId, DateTime, string userGender, string userAge, string searchGender, string searchAge)>? TargetQueue = null; // список нужной группы для поиска
 
-            if (seeker.userGender=="М" && seeker.searchGender=="Ж")
+            if (seeker.userGender=="male" && seeker.searchGender=="female")
             {
                 TargetQueue = Getero_Female_to_Male ;
             }
-            else if (seeker.userGender=="Ж" && seeker.searchGender=="М")
+            else if (seeker.userGender=="female" && seeker.searchGender=="male")
             {
                 TargetQueue = Getero_Male_to_Female;
             }
-            else if (seeker.userGender=="Ж" && seeker.searchGender=="Ж")
+            else if (seeker.userGender=="female" && seeker.searchGender=="female")
             {
                 TargetQueue = LesbiansPairs;
             }
-            else if (seeker.userGender=="М" && seeker.searchGender=="М")
+            else if (seeker.userGender=="male" && seeker.searchGender=="male")
             {
                 TargetQueue = GayPairs;
             }
@@ -136,39 +157,47 @@ public class MatchMakingService
 
             var extraMatch = basedMatch;
            
+            //самый идеальный мэтч ищется первые 60 секунд, после этого ищем первого подходящего по гендеру собеседника
             if (TimeInQueue<=60)
             {
-                extraMatch = basedMatch.Where(e => e.userAge ==
-                                                   seeker.searchAge) // проверяем что мэтч age совпадает с age того кого искал seeker
-                    .Where(e => e.searchAge ==
-                                seeker.userAge); // проверяем что age seeker'a совпадает с age который искал мэтч
-                ;
-                Log.Information("[Match-Making] пользователи идеально совпадают");
-                    
+                extraMatch = basedMatch
+                    .Where(e => e.userAge == seeker.searchAge) // проверяем что мэтч age совпадает с age того кого искал seeker
+                    .Where(e => e.searchAge == seeker.userAge); // проверяем что age seeker'a совпадает с age который искал мэтч
+                
             }
 
-           var match = extraMatch.FirstOrDefault();
+            var match = extraMatch.FirstOrDefault();
            
             if (match.Item1 != null)
             {
-                pair = (userID, match.Item1);
+                var partnerID = match.Item1;
                 
-                Log.Information("[Match-Making] Найдена пара: {pair}", pair);
+                // проверка на случай, если партнер был удален в миллисекунду между поиском и локом (редко, но возможно)
+                var partnerStillExists = PeopleInQueue.Any(x => x.Item1 == partnerID);
+                if (!partnerStillExists) 
+                {
+                    Log.Information($"[Match-Making] Найденный match {partnerID} был удален другим потоком");
+                    return (null, null);
+                }
+
+                var foundPair = (userID, partnerID);
+
+                Log.Information("[Match-Making] Найдена пара: {pair}", foundPair);
                 
-                RemoveFromQueue(userID); // удаляем ищущего
-                RemoveFromQueue(match.Item1); // удаляем того кого он искал
+                // удаляем обоих из очередей
+                RemoveFromQueue(userID); // удаляем ищущего (активного)
+                RemoveFromQueue(partnerID); // удаляем того кого он искал (пассивного)
                 
-                return pair;
+                // оставляем "письмо" пассивному партнеру
+                _completedMatches[partnerID] = userID;
+                
+                // возвращаем пару активному
+                return foundPair;
             }
         
             Log.Information("[Match-Making] Пара для {UserId} не найдена в целевом сегменте", userID);
             return (null, null);
     
         }
-        
-        
-
-        }
-        return pair;
     }
 }
