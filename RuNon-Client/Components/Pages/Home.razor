@@ -146,7 +146,7 @@
     
             <div class="search-actions">
                         
-                <button class="search-btn primary" @onclick="StartSearch" disabled="@(!(hubConnection?.State == HubConnectionState.Connected))">
+                <button class="search-btn primary" @onclick="StartSearch" disabled="@((hubConnection?.State != HubConnectionState.Connected))">
                     <i class="fas fa-search"></i>
                     Начать поиск
                 </button>

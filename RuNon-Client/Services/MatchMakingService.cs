@@ -1,4 +1,5 @@
 using Serilog;
+using System.Collections.Concurrent;
 
 namespace RuNon_Client.Services;
 
@@ -6,10 +7,14 @@ public class MatchMakingService
 {
     private static readonly object _sync = new object();
     
+    //словарь для хранения уведомлений о найденных парах.
+    // ключ: ID пользователя, который был найден (пассивный). 
+    //значение: ID того, кто его нашел (активный).
+    private static readonly ConcurrentDictionary<string, string> _completedMatches = new();
+
     public static List<(string userId, DateTime, string userGender, string userAge, string searchGender, string searchAge)>? PeopleInQueue = 
         new List<(string, DateTime,string, string, string, string)>();
     
-    public static (string?, string?) pair;
     
     private static List<(string, DateTime, string, string, string, string)>? GayPairs = new(); // М ищет М
     
@@ -25,6 +30,9 @@ public class MatchMakingService
         var user = ( userId, DateTime.Now, UserGender,  UserAge,  SearchGender, SearchAge);
         lock (_sync)
         {
+            // Проверка на дублирование, если пользователь уже есть
+            if (PeopleInQueue.Any(x => x.userId == userId)) return;
+
             PeopleInQueue.Add(user);
             
             try
@@ -89,17 +97,30 @@ public class MatchMakingService
 
     public (string?, string?) SearchCommand(string userID)
     {
+        // проверка потового ящика
+        if (_completedMatches.TryRemove(userID, out var activePartnerID))
+        {
+            Log.Information($"[Match-Making] {userID} (пассивный) уведомлен о матче с {activePartnerID}");
+            // возвращаем пару(мой айди + айди того кто меня нашел)
+            return (userID, activePartnerID);
+        }
 
+        // активный поиск
         lock (_sync)
         {
-            if (PeopleInQueue.Count<2)
-        {
-            Log.Information("[Match-Making] Недостаточно пользователей для поиска");
-            
-        }
-        else
-        {
             var seeker = PeopleInQueue.FirstOrDefault(e => e.userId == userID); //тот кто ищет
+            
+            if (seeker.userId == null) 
+            {
+                 // я не в очереди и не в почтовом ящике 
+                 return (null, null); 
+            }
+
+            if (PeopleInQueue.Count<2)
+            {
+                Log.Information("[Match-Making] Недостаточно пользователей для поиска");
+                return (null, null);
+            }
             
             List<(string userId, DateTime, string userGender, string userAge, string searchGender, string searchAge)>? TargetQueue = null; // список нужной группы для поиска
 
@@ -142,7 +163,6 @@ public class MatchMakingService
                 extraMatch = basedMatch
                     .Where(e => e.userAge == seeker.searchAge) // проверяем что мэтч age совпадает с age того кого искал seeker
                     .Where(e => e.searchAge == seeker.userAge); // проверяем что age seeker'a совпадает с age который искал мэтч
-                ;
                 
             }
 
@@ -150,24 +170,34 @@ public class MatchMakingService
            
             if (match.Item1 != null)
             {
-                pair = (userID, match.Item1);
+                var partnerID = match.Item1;
                 
-                Log.Information("[Match-Making] Найдена пара: {pair}", pair);
+                // проверка на случай, если партнер был удален в миллисекунду между поиском и локом (редко, но возможно)
+                var partnerStillExists = PeopleInQueue.Any(x => x.Item1 == partnerID);
+                if (!partnerStillExists) 
+                {
+                    Log.Information($"[Match-Making] Найденный match {partnerID} был удален другим потоком");
+                    return (null, null);
+                }
+
+                var foundPair = (userID, partnerID);
+
+                Log.Information("[Match-Making] Найдена пара: {pair}", foundPair);
                 
-                RemoveFromQueue(userID); // удаляем ищущего
-                RemoveFromQueue(match.Item1); // удаляем того кого он искал
+                // удаляем обоих из очередей
+                RemoveFromQueue(userID); // удаляем ищущего (активного)
+                RemoveFromQueue(partnerID); // удаляем того кого он искал (пассивного)
                 
-                return pair;
+                // оставляем "письмо" пассивному партнеру
+                _completedMatches[partnerID] = userID;
+                
+                // возвращаем пару активному
+                return foundPair;
             }
         
             Log.Information("[Match-Making] Пара для {UserId} не найдена в целевом сегменте", userID);
             return (null, null);
     
         }
-        
-        
-
-        }
-        return pair;
     }
 }
