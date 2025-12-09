@@ -9,7 +9,7 @@ public class EncryptionService
         public EncryptionService()
         {
             // Создаем RSA ключи один раз при старте приложения
-            _rsa = RSA.Create(1024); 
+            _rsa = RSA.Create(3072); 
         }
         
         public string GetPublicKey()
