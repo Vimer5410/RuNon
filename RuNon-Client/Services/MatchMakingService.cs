@@ -123,8 +123,12 @@ public class MatchMakingService
             }
             
             List<(string userId, DateTime, string userGender, string userAge, string searchGender, string searchAge)>? TargetQueue = null; // список нужной группы для поиска
-
-            if (seeker.userGender=="male" && seeker.searchGender=="female")
+            
+            if (seeker.searchGender == "any")
+            {
+                TargetQueue = PeopleInQueue;
+            }
+            else if (seeker.userGender=="male" && seeker.searchGender=="female")
             {
                 TargetQueue = Getero_Female_to_Male ;
             }
@@ -150,7 +154,8 @@ public class MatchMakingService
             var basedMatch = TargetQueue
                 .OrderBy(e => e.Item2) //сортируем чтобы ждуны были первыми в списке
                 .Where(e => e.userId != userID) //  проверяем что пользователь не нашел сам себя
-                .Where(e => e.searchGender == seeker.userGender);     // проверяем взаимное соответствие по полу
+                .Where(e => e.searchGender == seeker.userGender || e.searchGender == "any");     // проверяем взаимное соответствие по полу
+
                 
 
             double TimeInQueue = (DateTime.Now - seeker.Item2).TotalSeconds;
