@@ -97,7 +97,7 @@ public class MatchMakingService
 
     public (string?, string?) SearchCommand(string userID)
     {
-        // проверка потового ящика
+        // проверка почтового ящика
         if (_completedMatches.TryRemove(userID, out var activePartnerID))
         {
             Log.Information($"[Match-Making] {userID} (пассивный) уведомлен о матче с {activePartnerID}");

@@ -87,8 +87,8 @@
                 <div class="filter-group">
                     <label class="filter-label">Мой возраст:</label>
                     <select class="filter-select" @onchange="@((e) => myAge = int.Parse(e.Value.ToString()))">
-                        <option value="0">Не указан</option>
-                        @for (int i = 16; i <= 60; i++)
+                        <option value="16">16 лет</option>
+                        @for (int i = 17; i <= 60; i++)
                         {
                             <option value="@i">@i лет</option>
                         }
@@ -123,30 +123,20 @@
                 </div>
     
                 <div class="filter-group">
-                    <label class="filter-label">Возраст собеседника:</label>
-                    <div class="age-range">
-                        <select class="filter-select small" @onchange="@((e) => minAge = int.Parse(e.Value.ToString()))">
-                            <option value="16">16+</option>
-                            @for (int i = 18; i <= 60; i += 2)
-                            {
-                                <option value="@i">@i+</option>
-                            }
-                        </select>
-                        <span class="age-separator">до</span>
-                        <select class="filter-select small" @onchange="@((e) => maxAge = int.Parse(e.Value.ToString()))">
-                            <option value="60">60</option>
-                            @for (int i = 20; i <= 60; i += 2)
-                            {
-                                <option value="@i">@i</option>
-                            }
-                        </select>
+                                    <label class="filter-label">Возраст собеседника:</label>
+                    <select class="filter-select" @onchange="@((e) => partnerAge = int.Parse(e.Value.ToString()))">
+                        <option value="16">16 лет</option>
+                        @for (int i = 17; i <= 60; i++)
+                        {
+                            <option value="@i">@i лет</option>
+                        }
+                    </select>
                     </div>
-                </div>
             </div>
     
             <div class="search-actions">
                         
-                <button class="search-btn primary" @onclick="StartSearch" disabled="@((hubConnection?.State != HubConnectionState.Connected) || isSearching)">
+                <button class="search-btn primary" @onclick="StartSearch" disabled="@((hubConnection?.State != HubConnectionState.Connected) || isSearching || !string.IsNullOrEmpty(interviewerClientID))">
                     <i class="fas fa-search"></i>
                     Начать поиск
                 </button>
@@ -178,7 +168,7 @@
                         @* информация о текущем собеседнике *@
                 <div class="partner-info">
                     <div class="partner-avatar">
-                        @* логика иконки простая, так как бэкенд не хранит пол собеседника, ставим нейтральную или по фильтру *@
+                        <img class="local-avatar-img" src="images/Тейк2.0.png"/>
                         <i class="fas fa-user-secret"></i>
                     </div>
                     <div class="partner-details">
@@ -189,6 +179,7 @@
                     </div>
                     <button class="disconnect-btn" @onclick="DisconnectFromPartner" title="Завершить диалог">
                         <i class="fas fa-times"></i>
+                        <span>ЗАВЕРШИТЬ ЧАТ</span>
                     </button>
                 </div>
     
@@ -327,8 +318,7 @@
     private int myAge = 16;
     
     private string targetGender = "any";
-    private int minAge = 16;
-    private int maxAge = 60;
+    private int partnerAge = 16;
     
     private bool isSearching = false;
     
@@ -343,7 +333,7 @@
 
         isSearching = true;
         
-        _matchMakingService.AddToQueue(yourClientID, myGender, myAge.ToString(), targetGender, minAge.ToString());
+        _matchMakingService.AddToQueue(yourClientID, myGender, myAge.ToString(), targetGender, partnerAge.ToString());
         
         
         while (isSearching)
