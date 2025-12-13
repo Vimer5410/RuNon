@@ -146,7 +146,7 @@
     
             <div class="search-actions">
                         
-                <button class="search-btn primary" @onclick="StartSearch" disabled="@((hubConnection?.State != HubConnectionState.Connected))">
+                <button class="search-btn primary" @onclick="StartSearch" disabled="@((hubConnection?.State != HubConnectionState.Connected) || isSearching)">
                     <i class="fas fa-search"></i>
                     Начать поиск
                 </button>
@@ -173,7 +173,7 @@
         @* основная область чата *@
         <div class="chat-area">
             @* если interviewerСlientID (из бэкенда) заполнен - значит чат идет *@
-            @if (!string.IsNullOrEmpty(interviewerСlientID))
+            @if (!string.IsNullOrEmpty(interviewerClientID))
             {
                         @* информация о текущем собеседнике *@
                 <div class="partner-info">
@@ -184,7 +184,7 @@
                     <div class="partner-details">
                         <div class="partner-name">Собеседник найден!</div>
                         <div class="partner-stats">
-                            ID: @interviewerСlientID
+                            ID: @interviewerClientID
                         </div>
                     </div>
                     <button class="disconnect-btn" @onclick="DisconnectFromPartner" title="Завершить диалог">
@@ -324,7 +324,7 @@
 
 @code {
     private string myGender = "male";
-    private int myAge = 0;
+    private int myAge = 16;
     
     private string targetGender = "any";
     private int minAge = 16;
@@ -352,34 +352,41 @@
             // ищем Id собеседника
             if (!string.IsNullOrEmpty(pair.Item1) && pair.Item1 != yourClientID)
             {
-                interviewerСlientID = pair.Item1;
+                interviewerClientID = pair.Item1;
                 isSearching = false;
-                StateHasChanged();
             }
             else if (!string.IsNullOrEmpty(pair.Item2) && pair.Item2 != yourClientID)
             {
-                interviewerСlientID = pair.Item2;
+                interviewerClientID = pair.Item2;
                 isSearching = false;
-                StateHasChanged();
             }
-            StateHasChanged();
-
+            
+            await InvokeAsync(StateHasChanged);
             await Task.Delay(1000);
         }
         
     }
 
     // останавливаем поиск
-    private async Task StopSearch()
+    private void StopSearch()
     {
         isSearching = false;
+        if (!string.IsNullOrEmpty(yourClientID))
+        {
+            _matchMakingService.RemoveFromQueue(yourClientID);
+        }
+        pair = (null, null); // Сбрасываем найденную пару
+        StateHasChanged();
     }
 
     // выходим из чата с собеседником
     private async Task DisconnectFromPartner()
     {
-        await hubConnection.InvokeAsync("NotifyOfLeave", interviewerСlientID);
-        interviewerСlientID = null;
+        if (!string.IsNullOrEmpty(interviewerClientID))
+        {
+            await hubConnection.InvokeAsync("NotifyOfLeave", interviewerClientID);
+        }
+        interviewerClientID = null;
         receiveUserMessage.Clear();
         isSearching = false;
         StateHasChanged();

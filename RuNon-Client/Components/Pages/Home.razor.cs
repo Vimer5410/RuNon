@@ -29,7 +29,7 @@ public partial class Home:ComponentBase
     private HubConnection? hubConnection;   
     public List<(string message, bool isMine)> receiveUserMessage = new List<(string message, bool isMine)>();
     public string yourClientID;
-    public string interviewerСlientID;
+    public string interviewerClientID;
     public string messagetext;
     public byte[]? publicKeyFromServer;
     public bool isUserBanned;
@@ -187,7 +187,7 @@ public partial class Home:ComponentBase
                         rsa.ImportRSAPublicKey(publicKeyFromServer,  out _);
                         var AesKeyEncryptedbyRsa = rsa.Encrypt(AesKey, RSAEncryptionPadding.OaepSHA256);
                         // смс образа --> encryptMSG AESkey AESIV
-                        await hubConnection.InvokeAsync("SendToClient", interviewerСlientID, EncryptMsg, AesKeyEncryptedbyRsa, AesIV);
+                        await hubConnection.InvokeAsync("SendToClient", interviewerClientID, EncryptMsg, AesKeyEncryptedbyRsa, AesIV);
                     }
                 }
             }
