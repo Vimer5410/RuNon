@@ -147,17 +147,7 @@
                 </button>
             </div>
     
-            @if (isSearching)
-            {
-                <div class="search-status">
-                    <div class="search-animation">
-                        <div class="search-dot"></div>
-                        <div class="search-dot"></div>
-                        <div class="search-dot"></div>
-                    </div>
-                    <div class="search-text">Ищем собеседника...</div>
-                </div>
-            }
+           
         </div>
     
         @* основная область чата *@
@@ -165,10 +155,19 @@
             @* если interviewerСlientID (из бэкенда) заполнен - значит чат идет *@
             @if (!string.IsNullOrEmpty(interviewerClientID))
             {
-                        @* информация о текущем собеседнике *@
+                @* информация о текущем собеседнике *@
                 <div class="partner-info">
                     <div class="partner-avatar">
-                        <img class="local-avatar-img" src="images/Тейк2.0.png"/>
+                        @switch (new Random().Next(1,3))
+                        {
+                            case 1:
+                                <img class="local-avatar-img" src="images/ava_1.png"/>
+                                break;
+                            case 2:
+                                <img class="local-avatar-img" src="images/ava_2.png"/>
+                                break;
+                        }
+                        
                         <i class="fas fa-user-secret"></i>
                     </div>
                     <div class="partner-details">
@@ -231,14 +230,33 @@
                 
                 @* состояние без активного чата *@
                 <div class="no-chat-state">
-                    <div class="no-chat-icon">
-                        <i class="fas fa-user-plus"></i>
-                    </div>
-                    <div class="no-chat-title">Готов к общению?</div>
-                    <div class="no-chat-description">
-                        Заполните фильтры поиска и нажмите "Начать поиск"
-                    </div>
+                    
+                    @if (isSearching)
+                    {
+                        <div class="search-status">
+                            <div class="search-animation">
+                                <div class="search-dot"></div>
+                                <div class="search-dot"></div>
+                                <div class="search-dot"></div>
+                                </div>
+                            <div class="search-text">Ищем собеседника...</div>
+                            </div>
+                    }
+                    else
+                    {
+                        <div class="no-chat-icon">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <div class="no-chat-title">Готов к общению?</div>
+                        <div class="no-chat-description">
+                            Заполните фильтры поиска и нажмите "Начать поиск"
+                        </div>
+                    }
+                    
+                    
                 </div>
+                
+                
             }
         </div>
     </div>
@@ -379,6 +397,7 @@
         interviewerClientID = null;
         receiveUserMessage.Clear();
         isSearching = false;
+        messagetext = "";
         StateHasChanged();
     }
     
