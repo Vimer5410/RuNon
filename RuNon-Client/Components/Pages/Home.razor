@@ -158,13 +158,16 @@
                 @* информация о текущем собеседнике *@
                 <div class="partner-info">
                     <div class="partner-avatar">
-                        @switch (new Random().Next(1,3))
+                        @switch (avatarNumber)
                         {
                             case 1:
                                 <img class="local-avatar-img" src="images/ava_1.png"/>
                                 break;
                             case 2:
                                 <img class="local-avatar-img" src="images/ava_2.png"/>
+                                break;
+                            case 3:
+                                <img class="local-avatar-img" src="images/ava_3.png"/>
                                 break;
                         }
                         
@@ -342,10 +345,13 @@
     
     //матчмейкинг
     private (string?, string?) pair;
-    
+
+    //выбор случайной аватарки пользователя
+    private int avatarNumber=1;
    
     private async Task StartSearch()
     {
+        avatarNumber = new Random().Next(1, 4);
         // проверяем что нельзя начать поиск без своего ID
         if(string.IsNullOrEmpty(yourClientID)) return;
 
@@ -401,11 +407,12 @@
         StateHasChanged();
     }
     
-    // при перезагрузки страницы оффаем SignalR подключение
+    // при перезагрузки страницы оффаем SignalR подключение и отключаем собеседников(чтобы не получилось одностороннего общения)
     public async ValueTask DisposeAsync()
     {
         if (hubConnection is not null)
         {
+            await DisconnectFromPartner();
             await hubConnection.DisposeAsync();
         }
     }
