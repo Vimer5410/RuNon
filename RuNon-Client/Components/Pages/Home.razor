@@ -1,11 +1,10 @@
 ﻿@page "/"
 @using Microsoft.AspNetCore.SignalR.Client
 @using RuNon_Client.Services
-
 @using RuNon_Client.Components.Pages 
 @implements IAsyncDisposable
 @inject MatchMakingService _matchMakingService
-
+@inherits RuNon_Client.Components.Pages.ChatBase
 @rendermode InteractiveServer
 
 

@@ -5,6 +5,7 @@
 @inject MatchMakingService _matchMakingService
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
+@inherits RuNon_Client.Components.Pages.ChatBase
 @rendermode InteractiveServer
 
 
@@ -389,23 +390,11 @@
             await hubConnection.InvokeAsync("NotifyOfLeave", interviewerClientID);
         }
         interviewerClientID = null;
-        receiveUserMessage.Clear();
         isSearching = false;
-        messagetext = "";
         StateHasChanged();
     }
 
     
-    private void BanSendTechSupport_Btn()
-    {
-        throw new NotImplementedException();
-    }
-
-    private void BanReboot_Btn()
-    {
-        throw new NotImplementedException();
-    }
-
     private void ToggleMicMute()
     {
         throw new NotImplementedException();
