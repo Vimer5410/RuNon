@@ -155,7 +155,7 @@ public partial class Home:ComponentBase
             Console.ForegroundColor = ConsoleColor.Red;
             SendTestMessage();
             Console.WriteLine("ВЫ НАЖАЛИ ENTER");
-            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.ForegroundColor = ConsoleColor.White;
             messagetext = "";
         }
     }
@@ -280,6 +280,10 @@ public partial class Home:ComponentBase
 
     private async Task BanTechSupport()
     {
+        // переменная для проверки(чтобы избежать повторения записей)
+        int count = 0;
+        
+        
         var userGuidLocalStorage = await _protectedLocalStorage.GetAsync<string>("user_id");
         var BannedUsersSupportConnectionString = "Data Source=Banned_Users_Support.db";
         SqliteConnection BannedUsersSupporConnection = new SqliteConnection(BannedUsersSupportConnectionString);
@@ -290,19 +294,55 @@ public partial class Home:ComponentBase
                 guid TEXT,
                 date TEXT
                 )";
+        
         var sqlInsertBannedUser = @"INSERT INTO Banned_Users_Support(ip_address, guid, date)
                                   VALUES (@ip_address, @guid, @date)";
+
+        var sqlCheckIfIpExistsCommand = @"
+            SELECT COUNT(*) 
+            FROM Banned_Users_Support 
+            WHERE ip_address = @ip_address_to_check;
+            ";
+        var sqlCheckIfGUIDExistsCommand = @"
+            SELECT COUNT(*) 
+            FROM Banned_Users_Support 
+            WHERE guid = @guid_to_check;
+            ";
+        
         using (SqliteCommand BannedUsersSupporCreateTable = new SqliteCommand(sqlCreateBannedUsersSupporTable, BannedUsersSupporConnection))
         {
             await BannedUsersSupporCreateTable.ExecuteNonQueryAsync();
         }
 
-        using (SqliteCommand sqlInsertBannedUserCommand = new SqliteCommand(sqlInsertBannedUser, BannedUsersSupporConnection))
+        using (SqliteCommand CheckIfIpExists=new SqliteCommand(sqlCheckIfIpExistsCommand,BannedUsersSupporConnection))
         {
-            sqlInsertBannedUserCommand.Parameters.AddWithValue("@ip_address", userIp);
-            sqlInsertBannedUserCommand.Parameters.AddWithValue("@guid", userGuidLocalStorage.Value ?? "uknow_guid");
-            sqlInsertBannedUserCommand.Parameters.AddWithValue("@date", DateTime.Now.ToString("G"));
-            sqlInsertBannedUserCommand.ExecuteNonQuery();
+            CheckIfIpExists.Parameters.AddWithValue("@ip_address_to_check", userIp);
+            object? res;
+            res = await CheckIfIpExists.ExecuteScalarAsync();
+            count = + Convert.ToInt32(res);
+        }
+
+        using (SqliteCommand CheckIfGUIDExists=new SqliteCommand(sqlCheckIfGUIDExistsCommand, BannedUsersSupporConnection))
+        {
+            CheckIfGUIDExists.Parameters.AddWithValue("@guid_to_check", userGuidLocalStorage.Value);
+            object? res;
+            res = await CheckIfGUIDExists.ExecuteScalarAsync();
+            count = + Convert.ToInt32(res);
+        }
+
+        if (count>0)
+        {
+            Console.WriteLine($"Уже существует в бд {count}");
+        }
+        else
+        {
+            using (SqliteCommand sqlInsertBannedUserCommand = new SqliteCommand(sqlInsertBannedUser, BannedUsersSupporConnection))
+            {
+                sqlInsertBannedUserCommand.Parameters.AddWithValue("@ip_address", userIp);
+                sqlInsertBannedUserCommand.Parameters.AddWithValue("@guid", userGuidLocalStorage.Value ?? "uknow_guid");
+                sqlInsertBannedUserCommand.Parameters.AddWithValue("@date", DateTime.Now.ToString("G"));
+                sqlInsertBannedUserCommand.ExecuteNonQuery();
+            }
         }
     }
     
