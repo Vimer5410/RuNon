@@ -7,7 +7,11 @@
 @inherits RuNon_Client.Components.Pages.ChatBase
 @rendermode InteractiveServer
 
-
+<head>
+    <link rel="icon" type="image/x-icon" href="images/favicon.png" />
+    <link rel="shortcut icon" type="image/x-icon" href="images/favicon.png" />
+    <title>Текстовый чат</title>
+</head>
 
 <div class="chat-container">
     @* Заголовок приложения *@
@@ -263,7 +267,6 @@
         </div>
     </div>
 </div>
-
 
 @if (isUserBanned)
 {
