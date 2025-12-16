@@ -5,6 +5,7 @@
 @inject MatchMakingService _matchMakingService
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
 @inherits RuNon_Client.Components.Pages.ChatBase
 @rendermode InteractiveServer
 
@@ -371,7 +372,7 @@
     }
 
     // останавливаем поиск
-    private void StopSearch()
+    private async Task StopSearch()
     {
         isSearching = false;
         if (!string.IsNullOrEmpty(yourClientID))
@@ -394,20 +395,21 @@
         StateHasChanged();
     }
 
-    
-    private void ToggleMicMute()
-    {
-        throw new NotImplementedException();
-    }
-    
     public async ValueTask DisposeAsync()
     {
         if (hubConnection is not null)
         {
             await DisconnectFromPartner();
             await hubConnection.DisposeAsync();
+            await StopSearch();
+            dotNetRef?.Dispose();
         }
-        dotNetRef?.Dispose();
+        
+    }
+    
+    private async Task ToggleMicMute()
+    {
+        
     }
     
 }

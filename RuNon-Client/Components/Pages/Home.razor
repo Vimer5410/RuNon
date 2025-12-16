@@ -381,7 +381,7 @@
     }
 
     // останавливаем поиск
-    private void StopSearch()
+    private async Task StopSearch()
     {
         isSearching = false;
         if (!string.IsNullOrEmpty(yourClientID))
@@ -408,11 +408,12 @@
     
     // при перезагрузки страницы оффаем SignalR подключение и отключаем собеседников(чтобы не получилось одностороннего общения)
     public async ValueTask DisposeAsync()
-    {
+    {   
         if (hubConnection is not null)
         {
             await DisconnectFromPartner();
             await hubConnection.DisposeAsync();
+            await StopSearch();
         }
     }
 }
