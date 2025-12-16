@@ -1,4 +1,4 @@
-﻿.chat-container {
+.chat-container {
     max-width: 1400px;
     margin: 0 auto;
     padding: 0.5rem;
@@ -1304,13 +1304,13 @@
     .gender-icon.female { color: #ec4899; }
     .gender-icon.any { color: var(--text-secondary); }
 
-    
+
     .age-range {
         display: flex;
         align-items: center;
         gap: 0.75rem;
     }
-    
+
     .filter-select {
         width: 100%;
         padding: 10px 15px;
@@ -1335,7 +1335,7 @@
         outline: none;
         box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
     }
-    
+
 
     .filter-select::-webkit-scrollbar {
         width: 6px;
@@ -1353,18 +1353,18 @@
     .filter-select::-webkit-scrollbar-thumb:hover {
         background: #4f46e5;
     }
-    
+
     .filter-select {
         scrollbar-width: thin;
         scrollbar-color: var(--primary-color) transparent;
     }
-    
+
     .filter-select option {
         background-color: var(--bg-tertiary);
         color: var(--text-primary);
-        padding: 10px; 
+        padding: 10px;
     }
-    
+
     .filter-select {
         scrollbar-width: thin;
         scrollbar-color: var(--primary-color) var(--bg-tertiary);
@@ -1430,19 +1430,19 @@
         justify-content: center;
         background: transparent;
         border: none;
-        padding: 2rem 0; 
+        padding: 2rem 0;
         width: 100%;
         height: 100%;
         box-shadow: none;
     }
-    
+
     .search-animation {
         display: flex;
         justify-content: center;
         gap: 0.8rem;
         margin-bottom: 1rem;
     }
-    
+
     .search-dot {
         width: 10px;
         height: 10px;
@@ -1457,7 +1457,7 @@
     .search-dot:nth-child(2) { animation-delay: 0.25s; }
     .search-dot:nth-child(3) { animation-delay: 0.5s; }
 
-    
+
     @keyframes search-pulse-fit {
         0%, 100% {
             opacity: 0.4;
@@ -1468,15 +1468,15 @@
             transform: scale(1.2);
         }
     }
-    
+
     .search-text {
         color: var(--text-primary);
         font-size: 1.1rem;
         font-weight: 600;
         letter-spacing: 0.5px;
-        text-shadow: 0 0 5px rgba(99, 102, 241, 0.5); 
+        text-shadow: 0 0 5px rgba(99, 102, 241, 0.5);
     }
-    
+
     .partner-info {
         display: flex;
         align-items: center;
@@ -1494,7 +1494,7 @@
         border-color: rgba(255, 255, 255, 0.2);
     }
 
- 
+
     .partner-avatar {
         width: 44px;
         height: 44px;
@@ -1507,19 +1507,19 @@
         flex-shrink: 0;
         overflow: hidden;
     }
-    
+
     .local-avatar-img {
         width: 100%;
         height: 100%;
         object-fit: cover;
         border-radius: 50%;
     }
-    
+
     .partner-avatar i {
         font-size: 1.2rem;
         color: rgba(255, 255, 255, 0.6);
     }
-    
+
     .partner-details {
         flex: 1;
         display: flex;
@@ -1536,7 +1536,7 @@
         gap: 8px;
     }
 
-    
+
     .partner-name::before {
         content: '';
         width: 8px;
@@ -1567,7 +1567,7 @@
         background: rgba(239, 68, 68, 0.1);
         border: 1px solid rgba(239, 68, 68, 0.2);
         color: #ef4444;
-        padding: 8px 16px;  
+        padding: 8px 16px;
         border-radius: 8px;
         font-size: 0.75rem;
         font-weight: 700;
@@ -1581,7 +1581,7 @@
         flex-shrink: 0;
         position: relative;
         overflow: hidden;
-        z-index: 0; 
+        z-index: 0;
     }
 
 
@@ -1595,10 +1595,10 @@
         border-radius: 50%;
         background: rgba(239, 68, 68, 0.5);
         transform: translate(-50%, -50%);
-        transition: width 0.6s, height 0.6s; 
-        z-index: -1; 
+        transition: width 0.6s, height 0.6s;
+        z-index: -1;
     }
-    
+
     .disconnect-btn:hover::before {
         width: 250px;
         height: 250px;
@@ -1607,14 +1607,14 @@
     .disconnect-btn:hover {
         background: rgba(239, 68, 68, 0.15);
         transform: translateY(-1px);
-        box-shadow: 0 3px 10px rgba(239, 68, 68, 0.2); 
+        box-shadow: 0 3px 10px rgba(239, 68, 68, 0.2);
     }
 
     .disconnect-btn:active {
         transform: translateY(0);
         box-shadow: 0 1px 5px rgba(239, 68, 68, 0.1);
     }
-    
+
     .chat-start {
         display: flex;
         flex-direction: column;
@@ -1635,5 +1635,252 @@
     .chat-start p {
         font-size: 0.9rem;
         margin: 0;
+    }
+
+    /* ================================================================= */
+    /* НОВЫЕ СТИЛИ ДЛЯ VOICE CHAT (Добавить в конец вашего CSS) */
+    /* ================================================================= */
+
+    /* Область активного голосового чата */
+    .voice-chat-active {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1rem;
+        text-align: center;
+        background: var(--bg-secondary); /* Используем более темный фон для контраста */
+        border-radius: 8px;
+        box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Общая информация о партнере в режиме звонка */
+    .partner-call-info {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 25px;
+        width: 100%;
+        max-width: 250px;
+        padding: 15px;
+        border-radius: 12px;
+        background: var(--bg-tertiary);
+        border: 2px solid var(--border-color);
+        transition: all 0.3s ease;
+    }
+
+    /* Анимированная рамка при разговоре */
+    .partner-call-info.speaking {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
+        transform: scale(1.02);
+    }
+
+    .partner-call-info.speaking .partner-avatar {
+        border-color: var(--primary-color);
+    }
+
+    /* Аватар (крупнее, чем в чате) */
+    .partner-call-info .partner-avatar {
+        width: 80px;
+        height: 80px;
+        background: var(--primary-color);
+        border: 4px solid var(--border-color);
+        box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1);
+        transition: border-color 0.3s ease;
+    }
+
+    .partner-call-info .partner-avatar i {
+        font-size: 2.5rem;
+        color: white;
+    }
+
+    .partner-call-info .partner-details {
+        margin-top: 10px;
+    }
+
+    .partner-call-info .partner-name {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 5px;
+    }
+
+    .call-status-text {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--success-color);
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .call-status-text i {
+        color: var(--success-color);
+    }
+
+    /* Индикатор голоса (Визуализация) */
+    .partner-voice-indicator {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 20px;
+        margin-top: 15px;
+        gap: 4px;
+        width: 100%;
+    }
+
+    .voice-bar {
+        width: 4px;
+        height: 100%;
+        background-color: var(--primary-color);
+        border-radius: 2px;
+        opacity: 0.2;
+        transform: scaleY(0.1);
+        transition: all 0.2s ease-in-out;
+    }
+
+    /* Анимация при разговоре */
+    .partner-call-info.speaking .voice-bar {
+        opacity: 1;
+        animation: voice-activity 0.6s infinite ease-in-out alternate;
+    }
+
+    .partner-call-info.speaking .voice-bar.bar-1 { animation-delay: 0s; }
+    .partner-call-info.speaking .voice-bar.bar-2 { animation-delay: 0.1s; }
+    .partner-call-info.speaking .voice-bar.bar-3 { animation-delay: 0.2s; }
+    .partner-call-info.speaking .voice-bar.bar-4 { animation-delay: 0.3s; }
+    .partner-call-info.speaking .voice-bar.bar-5 { animation-delay: 0.4s; }
+
+
+    @keyframes voice-activity {
+        0% { transform: scaleY(0.1); }
+        100% { transform: scaleY(1.0); }
+    }
+
+    /* Таймер звонка */
+    .call-timer {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin-bottom: 30px;
+        padding: 5px 15px;
+        border-radius: 6px;
+        background: var(--bg-tertiary);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: var(--shadow);
+    }
+
+    .call-timer i {
+        font-size: 1.2rem;
+        color: var(--secondary-color);
+    }
+
+    /* Элементы управления (Кнопки) */
+    .call-controls {
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+        margin-bottom: 40px;
+    }
+
+    .control-btn {
+        border: none;
+        border-radius: 50%;
+        width: 65px;
+        height: 65px;
+        cursor: pointer;
+        color: white;
+        transition: all 0.3s ease;
+        font-size: 1.8rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Кнопка микрофона (Toggle) */
+    .mic-toggle {
+        background: var(--primary-color);
+    }
+
+    .mic-toggle:hover {
+        background: var(--primary-dark);
+        transform: scale(1.05);
+    }
+
+    .mic-toggle.muted {
+        background: var(--danger-color);
+        box-shadow: 0 5px 15px rgba(239, 68, 68, 0.5);
+    }
+
+    .mic-toggle.muted:hover {
+        background: #dc2626;
+    }
+
+
+    /* Кнопка завершения звонка */
+    .end-call-btn {
+        background: var(--danger-color);
+        width: 140px;
+        border-radius: 35px;
+        font-size: 1rem;
+        font-weight: 700;
+        padding: 0 20px;
+        gap: 8px;
+        height: 65px;
+    }
+
+    .end-call-btn:hover {
+        background: #dc2626;
+        transform: scale(1.05);
+        box-shadow: 0 5px 15px rgba(239, 68, 68, 0.5);
+    }
+
+    .partner-id-footer {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        opacity: 0.6;
+        font-family: 'JetBrains Mono', monospace;
+        word-break: break-all;
+    }
+
+    /* Переопределение для состояния "нет чата" */
+    .no-chat-state .no-chat-icon i {
+        color: var(--primary-color);
+        font-size: 3.5rem; /* Увеличим иконку в состоянии ожидания */
+    }
+
+    /* Адаптация для десктопа (min-width: 1024px) */
+    @media (min-width: 1024px) {
+        .voice-chat-active {
+            padding: 4rem 2rem;
+            min-height: 550px;
+        }
+
+        .partner-call-info {
+            max-width: 300px;
+        }
+
+        .partner-call-info .partner-avatar {
+            width: 100px;
+            height: 100px;
+        }
+
+        .partner-call-info .partner-avatar i {
+            font-size: 3rem;
+        }
+
+        .partner-call-info .partner-name {
+            font-size: 1.4rem;
+        }
+
+        .call-timer {
+            font-size: 1.8rem;
+        }
     }
 }

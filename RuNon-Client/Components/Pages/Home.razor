@@ -1,14 +1,17 @@
 ﻿@page "/"
 @using Microsoft.AspNetCore.SignalR.Client
 @using RuNon_Client.Services
-
 @using RuNon_Client.Components.Pages 
 @implements IAsyncDisposable
 @inject MatchMakingService _matchMakingService
-
+@inherits RuNon_Client.Components.Pages.ChatBase
 @rendermode InteractiveServer
 
-
+<head>
+    <link rel="icon" type="image/x-icon" href="images/favicon.png" />
+    <link rel="shortcut icon" type="image/x-icon" href="images/favicon.png" />
+    <title>Текстовый чат</title>
+</head>
 
 <div class="chat-container">
     @* Заголовок приложения *@
@@ -147,17 +150,7 @@
                 </button>
             </div>
     
-            @if (isSearching)
-            {
-                <div class="search-status">
-                    <div class="search-animation">
-                        <div class="search-dot"></div>
-                        <div class="search-dot"></div>
-                        <div class="search-dot"></div>
-                    </div>
-                    <div class="search-text">Ищем собеседника...</div>
-                </div>
-            }
+           
         </div>
     
         @* основная область чата *@
@@ -165,10 +158,22 @@
             @* если interviewerСlientID (из бэкенда) заполнен - значит чат идет *@
             @if (!string.IsNullOrEmpty(interviewerClientID))
             {
-                        @* информация о текущем собеседнике *@
+                @* информация о текущем собеседнике *@
                 <div class="partner-info">
                     <div class="partner-avatar">
-                        <img class="local-avatar-img" src="images/Тейк2.0.png"/>
+                        @switch (avatarNumber)
+                        {
+                            case 1:
+                                <img class="local-avatar-img" src="images/ava_1.png"/>
+                                break;
+                            case 2:
+                                <img class="local-avatar-img" src="images/ava_2.png"/>
+                                break;
+                            case 3:
+                                <img class="local-avatar-img" src="images/ava_3.png"/>
+                                break;
+                        }
+                        
                         <i class="fas fa-user-secret"></i>
                     </div>
                     <div class="partner-details">
@@ -231,19 +236,37 @@
                 
                 @* состояние без активного чата *@
                 <div class="no-chat-state">
-                    <div class="no-chat-icon">
-                        <i class="fas fa-user-plus"></i>
-                    </div>
-                    <div class="no-chat-title">Готов к общению?</div>
-                    <div class="no-chat-description">
-                        Заполните фильтры поиска и нажмите "Начать поиск"
-                    </div>
+                    
+                    @if (isSearching)
+                    {
+                        <div class="search-status">
+                            <div class="search-animation">
+                                <div class="search-dot"></div>
+                                <div class="search-dot"></div>
+                                <div class="search-dot"></div>
+                                </div>
+                            <div class="search-text">Ищем собеседника...</div>
+                            </div>
+                    }
+                    else
+                    {
+                        <div class="no-chat-icon">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <div class="no-chat-title">Готов к общению?</div>
+                        <div class="no-chat-description">
+                            Заполните фильтры поиска и нажмите "Начать поиск"
+                        </div>
+                    }
+                    
+                    
                 </div>
+                
+                
             }
         </div>
     </div>
 </div>
-
 
 @if (isUserBanned)
 {
@@ -324,10 +347,13 @@
     
     //матчмейкинг
     private (string?, string?) pair;
-    
+
+    //выбор случайной аватарки пользователя
+    private int avatarNumber=1;
    
     private async Task StartSearch()
     {
+        avatarNumber = new Random().Next(1, 4);
         // проверяем что нельзя начать поиск без своего ID
         if(string.IsNullOrEmpty(yourClientID)) return;
 
@@ -379,14 +405,16 @@
         interviewerClientID = null;
         receiveUserMessage.Clear();
         isSearching = false;
+        messagetext = "";
         StateHasChanged();
     }
     
-    // при перезагрузки страницы оффаем SignalR подключение
+    // при перезагрузки страницы оффаем SignalR подключение и отключаем собеседников(чтобы не получилось одностороннего общения)
     public async ValueTask DisposeAsync()
     {
         if (hubConnection is not null)
         {
+            await DisconnectFromPartner();
             await hubConnection.DisposeAsync();
         }
     }
