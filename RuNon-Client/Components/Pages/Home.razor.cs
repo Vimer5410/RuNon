@@ -38,7 +38,7 @@ public partial class Home:ChatBase
                     var decryptedMessage = Decrypt(encryptedMessage, aesKey, aesIV);
                     if (!String.IsNullOrEmpty(decryptedMessage))
                     {
-                    receiveUserMessage.Add((decryptedMessage,false));
+                        receiveUserMessage.Add((decryptedMessage,false));
                     }
                     Console.WriteLine($"Received: {decryptedMessage}");
                     StateHasChanged();

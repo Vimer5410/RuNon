@@ -7,9 +7,8 @@ public partial class VoiceChat: ChatBase
 {
     // из тестового войc чата
     private DotNetObjectReference<VoiceChat> dotNetRef;
-    private bool inRoom = false;
-    private bool isConnecting = false;
-    private int participantCount = 1;
+    private bool inRoom;
+    private bool isConnecting;
     private string errorMessage = "";
 
 
@@ -32,7 +31,6 @@ public partial class VoiceChat: ChatBase
         hubConnection.On<string>("UserJoined", async (userId) =>
         {
             Console.WriteLine($"[C#] Пользователь присоединился: {userId}");
-            participantCount++;
             await InvokeAsync(StateHasChanged);
             await JSRuntime.InvokeVoidAsync("VoiceChat.handleUserJoined", userId, dotNetRef);
         });
@@ -58,7 +56,6 @@ public partial class VoiceChat: ChatBase
         hubConnection.On<string>("UserLeft", async (userId) =>
         {
             Console.WriteLine($"[C#] Пользователь вышел: {userId}");
-            participantCount = Math.Max(1, participantCount - 1);
             await InvokeAsync(StateHasChanged);
             await JSRuntime.InvokeVoidAsync("VoiceChat.handleUserLeft", userId);
         });
@@ -103,7 +100,6 @@ public partial class VoiceChat: ChatBase
         {
             Console.WriteLine("[C#] Вход в комнату...");
             
-            
             // Передаём dotNetRef в JS
             await JSRuntime.InvokeVoidAsync("VoiceChat.joinRoom", dotNetRef);
             inRoom = true;
@@ -124,7 +120,6 @@ public partial class VoiceChat: ChatBase
     private void LeaveRoom()
     {
         inRoom = false;
-        participantCount = 1;
     }
     
     
@@ -162,5 +157,4 @@ public partial class VoiceChat: ChatBase
         Console.WriteLine($"[C#] Отправка ICE к {targetId}");
         await hubConnection!.InvokeAsync("SendIceCandidateToUser", targetId, candidate);
     }
-    
 }
