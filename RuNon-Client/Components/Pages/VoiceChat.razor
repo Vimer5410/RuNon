@@ -1,1378 +1,419 @@
-﻿@page "/voice"
+﻿@page "/a"
 @using Microsoft.AspNetCore.SignalR.Client
+@using RuNon_Client.Services
+@using RuNon_Client.Components.Pages 
+@inject MatchMakingService _matchMakingService
 @inject NavigationManager Navigation
-@inject IJSRuntime JS
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+@inherits RuNon_Client.Components.Pages.ChatBase
 @rendermode InteractiveServer
 
-<div class="voice-chat-app">
-    <div class="app-header">
-        <h1 class="app-title">
-            <i class="fas fa-user-secret"></i>
-            Анонимный Голосовой Чат
-        </h1>
-        <div class="app-subtitle">Общайся голосом анонимно</div>
-    </div>
 
-    <div class="status-panel">
-        <div class="connection-status">
-            <div class="status-dot @(connected ? "status-online" : "status-offline")"></div>
-            <div class="status-text">
-                <i class="fas @(connected ? "fa-wifi" : "fa-wifi-slash")"></i>
-                <span>@(connected ? "Подключен" : "Отключен")</span>
-            </div>
-        </div>
-        
-        <div class="user-info">
-            <div class="user-id">
-                <i class="fas fa-id-card"></i>
-                Ваш ID: <code class="id-value">@(connectionId ?? "Не подключен")</code>
-            </div>
-        </div>
-    </div>
+<head>
+    <link rel="icon" type="image/x-icon" href="images/favicon.png" />
+    <link rel="shortcut icon" type="image/x-icon" href="images/favicon.png" />
+    <title>Голосовой чат</title>
+</head>
 
-    <div class="main-content">
-        <div class="search-sidebar">
-            <div class="sidebar-header">
+<div class="chat-container">
+    @* Заголовок приложения *@
+            <div class="header-section">
+                <h1 class="header-title">
+                    <i class="fas fa-headset"></i> 
+                    Анонимный **Войс** Чат
+                </h1>
+                <div class="header-subtitle">Найди собеседника по интересам</div>
+            </div>
+    
+            @* статус подключения *@
+            <div class="status-card">
+                @{
+                        var state = hubConnection?.State;
+                        
+                        string statusClass = state == HubConnectionState.Connected ? "status-connected" :
+                        state == HubConnectionState.Connecting ? "status-connecting" : "status-disconnected";
+                        
+                        string statusText = state == HubConnectionState.Connected ? "Подключен" :
+                        state == HubConnectionState.Connecting ? "Подключение..." : "Отключен";
+                        
+                        string statusIcon = state == HubConnectionState.Connected ? "fa-wifi" :
+                        state == HubConnectionState.Connecting ? "fa-spinner fa-spin" : "fa-wifi-slash";
+                }
+                <div class="connection-status">
+                    <div class="status-indicator @statusClass"></div>
+                    <div class="status-info">
+                        <i class="fas @statusIcon"></i>
+                        <span>@statusText</span>
+                    </div>
+                </div>
+    
+                <div class="connection-info">
+                    <div class="connection-label">
+                        <i class="fas fa-id-card"></i>
+                        Ваш ID: <code class="connection-id">@(yourClientID ?? "Не подключен")</code>
+                    </div>
+                    @if (!string.IsNullOrEmpty(userIp))
+                    {
+                         <div style="font-size: 0.8em; color: #666; margin-top: 5px;">IP: @userIp</div>
+                    }
+                </div>
+            </div>
+    
+            @* Основная сетка *@
+    <div class="main-grid">
+        @* панель фильтров (Оставлена без изменений) *@
+        <div class="filters-panel">
+            <div class="panel-header">
                 <i class="fas fa-search"></i>
                 <h3>Поиск собеседника</h3>
             </div>
-            
-            <div class="filter-block">
-                <div class="block-title">Мои данные</div>
-                
-                <div class="filter-item">
-                    <label class="filter-name">Мой пол:</label>
-                    <div class="radio-buttons">
-                        <label class="radio-choice">
-                            <input type="radio" name="myGender" value="male" @onchange="@(e => myGender = e.Value?.ToString())">
-                            <span class="radio-dot"></span>
+    
+            <div class="filter-section">
+                <div class="section-title">Мои данные</div>
+    
+                <div class="filter-group">
+                    <label class="filter-label">Мой пол:</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="myGender" value="male" checked="@(myGender == "male")" @onchange="@((e) => myGender = "male")">
+                            <span class="radio-custom"></span>
                             <i class="fas fa-mars gender-icon male"></i>
-                            Мужской
+                            М
                         </label>
-                        <label class="radio-choice">
-                            <input type="radio" name="myGender" value="female" @onchange="@(e => myGender = e.Value?.ToString())">
-                            <span class="radio-dot"></span>
+                        <label class="radio-option">
+                            <input type="radio" name="myGender" value="female" checked="@(myGender == "female")" @onchange="@((e) => myGender = "female")">
+                            <span class="radio-custom"></span>
                             <i class="fas fa-venus gender-icon female"></i>
-                            Женский
+                            Ж
                         </label>
                     </div>
                 </div>
-
-                <div class="filter-item">
-                    <label class="filter-name">Мой возраст:</label>
-                    <select class="filter-dropdown" @bind="myAge">
-                        <option value="0">Выберите возраст</option>
-                        @for (int i = 16; i <= 60; i++)
+    
+                <div class="filter-group">
+                    <label class="filter-label">Мой возраст:</label>
+                    <select class="filter-select" @onchange="@((e) => myAge = int.Parse(e.Value.ToString()))">
+                        <option value="16">16 лет</option>
+                        @for (int i = 17; i <= 60; i++)
                         {
                             <option value="@i">@i лет</option>
                         }
                     </select>
                 </div>
             </div>
-
-            <div class="filter-block">
-                <div class="block-title">Ищу собеседника</div>
-                
-                <div class="filter-item">
-                    <label class="filter-name">Пол собеседника:</label>
-                    <div class="radio-buttons">
-                        <label class="radio-choice">
-                            <input type="radio" name="targetGender" value="any" checked="@(targetGender == "any")" @onchange="@(e => targetGender = e.Value?.ToString())">
-                            <span class="radio-dot"></span>
+    
+            <div class="filter-section">
+                <div class="section-title">Ищу собеседника</div>
+                <div class="filter-group">
+                    <label class="filter-label">Пол собеседника:</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="targetGender" value="male" checked="@(targetGender == "male")" @onchange="@((e) => targetGender = "male")">
+                            <span class="radio-custom"></span>
+                            <i class="fas fa-mars gender-icon male"></i>
+                            М
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="targetGender" value="female" checked="@(targetGender == "female")" @onchange="@((e) => targetGender = "female")">
+                            <span class="radio-custom"></span>
+                            <i class="fas fa-venus gender-icon female"></i>
+                            Ж
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="targetGender" value="any" checked="@(targetGender == "any")" @onchange="@((e) => targetGender = "any")">
+                            <span class="radio-custom"></span>
                             <i class="fas fa-users gender-icon"></i>
                             Любой
                         </label>
-                        <label class="radio-choice">
-                            <input type="radio" name="targetGender" value="male" @onchange="@(e => targetGender = e.Value?.ToString())">
-                            <span class="radio-dot"></span>
-                            <i class="fas fa-mars gender-icon male"></i>
-                            Мужской
-                        </label>
-                        <label class="radio-choice">
-                            <input type="radio" name="targetGender" value="female" @onchange="@(e => targetGender = e.Value?.ToString())">
-                            <span class="radio-dot"></span>
-                            <i class="fas fa-venus gender-icon female"></i>
-                            Женский
-                        </label>
                     </div>
                 </div>
-
-                <div class="filter-item">
-                    <label class="filter-name">Возраст собеседника:</label>
-                    <div class="age-selectors">
-                        <select class="filter-dropdown small" @bind="minAge">
-                            <option value="16">16+</option>
-                            @for (int i = 18; i <= 50; i += 2)
-                            {
-                                <option value="@i">@i+</option>
-                            }
-                        </select>
-                        <span class="age-dash">до</span>
-                        <select class="filter-dropdown small" @bind="maxAge">
-                            <option value="60">60</option>
-                            @for (int i = 20; i <= 60; i += 2)
-                            {
-                                <option value="@i">@i</option>
-                            }
-                        </select>
-                    </div>
-                </div>
+    
+                <div class="filter-group">
+                                         <label class="filter-label">Возраст собеседника:</label>
+                    <select class="filter-select" @onchange="@((e) => partnerAge = int.Parse(e.Value.ToString()))">
+                        <option value="16">16 лет</option>
+                        @for (int i = 17; i <= 60; i++)
+                        {
+                            <option value="@i">@i лет</option>
+                        }
+                    </select>
+                 </div>
             </div>
-
-            <div class="search-buttons">
-                <button class="btn primary" @onclick="BeginSearch" disabled="@(!CanSearch())">
+    
+            <div class="search-actions">
+                         
+                <button class="search-btn primary" @onclick="StartSearch" disabled="@((hubConnection?.State != HubConnectionState.Connected) || isSearching || !string.IsNullOrEmpty(interviewerClientID))">
                     <i class="fas fa-search"></i>
                     Начать поиск
                 </button>
-                <button class="btn secondary" @onclick="EndSearch" disabled="@(!searchActive)">
+                         
+                <button class="search-btn secondary" @onclick="StopSearch" disabled="@(!isSearching)">
                     <i class="fas fa-stop"></i>
                     Остановить
                 </button>
             </div>
-
-            <div class="debug-section">
-                <button class="btn debug" @onclick="InitiateTestCall">
-                    <i class="fas fa-flask"></i>
-                    Тест звонка
-                </button>
-            </div>
-
-            @if (searchActive)
-            {
-                <div class="searching-indicator">
-                    <div class="searching-animation">
-                        <div class="searching-dot"></div>
-                        <div class="searching-dot"></div>
-                        <div class="searching-dot"></div>
-                    </div>
-                    <div class="searching-text">Ищем собеседника...</div>
-                </div>
-            }
+    
+            
         </div>
-
-        <div class="voice-main">
-            @if (currentPartner != null)
+    
+        @* основная область чата (Изменено для Войс Чата) *@
+        <div class="chat-area">
+            @* isCallActive - предполагаемое состояние, что P2P соединение установлено *@
+            @if (!string.IsNullOrEmpty(interviewerClientID))
             {
-                <div class="call-info">
-                    <div class="partner-avatar">
-                        <i class="fas @(currentPartner.Gender == "male" ? "fa-mars" : currentPartner.Gender == "female" ? "fa-venus" : "fa-user")"></i>
-                    </div>
-                    <div class="partner-details">
-                        <div class="partner-name">Собеседник на связи</div>
-                        <div class="partner-info">
-                            @currentPartner.Gender, @currentPartner.Age лет
+                <div class="voice-chat-active">
+                    
+                    @* Аватар и Индикатор активности собеседника *@
+                    <div class="partner-call-info @(isPartnerSpeaking ? "speaking" : "")">
+                        <div class="partner-avatar">
+                            @* Тут можно использовать более нейтральный аватар или заглушку *@
+                            <i class="fas fa-user-secret"></i>
+                        </div>
+                        <div class="partner-details">
+                            <div class="partner-name">Собеседник найден!</div>
+                            <div class="call-status-text">
+                                <i class="fas fa-headset"></i> **Идет разговор...**
+                            </div>
+                        </div>
+                        @* Визуализация голоса (простая) *@
+                        <div class="partner-voice-indicator">
+                            <div class="voice-bar bar-1"></div>
+                            <div class="voice-bar bar-2"></div>
+                            <div class="voice-bar bar-3"></div>
                         </div>
                     </div>
-                    <button class="end-call-btn" @onclick="HangUp" title="Завершить звонок">
-                        <i class="fas fa-phone-slash"></i>
-                    </button>
-                </div>
 
-                <div class="voice-display">
-                    <div class="call-time">
+                    @* Таймер звонка *@
+                    <div class="call-timer">
                         <i class="fas fa-clock"></i>
-                        <span>@callTime</span>
+                        <span>@callTimer</span> @* Нужно реализовать логику обновления в C# *@
                     </div>
-
-                    <div class="voice-animation">
-                        <div class="user-avatar @(userSpeaking ? "speaking" : "")">
-                            <i class="fas fa-user"></i>
-                            <div class="avatar-label">Вы</div>
-                        </div>
-
-                        <div class="connection-line">
-                            <div class="signal user-signal @(userSpeaking ? "active" : "")"></div>
-                            <div class="signal partner-signal @(partnerSpeaking ? "active" : "")"></div>
-                        </div>
-
-                        <div class="partner-avatar-anim @(partnerSpeaking ? "speaking" : "")">
-                            <i class="fas fa-user-friends"></i>
-                            <div class="avatar-label">Собеседник</div>
-                        </div>
-                    </div>
-
-                    <div class="talk-status">
-                        @if (userSpeaking)
-                        {
-                            <div class="status-message active">
-                                <i class="fas fa-microphone"></i>
-                                Вы говорите...
-                            </div>
-                        }
-                        else if (partnerSpeaking)
-                        {
-                            <div class="status-message partner">
-                                <i class="fas fa-volume-up"></i>
-                                Собеседник говорит...
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="status-message">
-                                <i class="fas fa-headphones"></i>
-                                На связи...
-                            </div>
-                        }
-                    </div>
-                </div>
-
-                <div class="control-panel">
-                    <div class="control-item">
-                        <button class="control-button @(micMuted ? "off" : "")" 
-                                @onclick="ToggleMic"
-                                title="@(micMuted ? "Включить микрофон" : "Выключить микрофон")">
-                            <i class="fas @(micMuted ? "fa-microphone-slash" : "fa-microphone")"></i>
+    
+                    @* Элементы управления звонком *@
+                    <div class="call-controls">
+                        @* Кнопка микрофона *@
+                        <button class="control-btn mic-toggle @(isLocalMicMuted ? "muted" : "")" 
+                                @onclick="ToggleMicMute" 
+                                title="@(isLocalMicMuted ? "Включить микрофон" : "Выключить микрофон")">
+                            <i class="fas @(isLocalMicMuted ? "fa-microphone-slash" : "fa-microphone")"></i>
                         </button>
-                        <div class="control-name">Микрофон</div>
-                    </div>
-
-                    <div class="control-item">
-                        <button class="control-button hangup" 
-                                @onclick="HangUp"
-                                title="Завершить звонок">
+    
+                        @* Кнопка завершения чата *@
+                        <button class="control-btn end-call-btn" 
+                                @onclick="DisconnectFromPartner" 
+                                title="Завершить голосовой чат">
                             <i class="fas fa-phone-slash"></i>
+                            **Завершить**
                         </button>
-                        <div class="control-name">Завершить</div>
-                    </div>
 
-                    <div class="control-item">
-                        <button class="control-button @(audioMuted ? "off" : "")" 
-                                @onclick="ToggleAudio"
-                                title="@(audioMuted ? "Включить звук" : "Выключить звук")">
-                            <i class="fas @(audioMuted ? "fa-volume-mute" : "fa-volume-up")"></i>
-                        </button>
-                        <div class="control-name">Звук</div>
-                    </div>
-                </div>
-
-                <div class="volume-panel">
-                    <div class="volume-control">
-                        <label class="volume-name">
-                            <i class="fas fa-microphone"></i>
-                            Громкость микрофона
-                        </label>
-                        <input type="range" 
-                               class="volume-slider" 
-                               min="0" 
-                               max="100" 
-                               @bind="micLevel"
-                               disabled="@micMuted">
-                        <span class="volume-percent">@micLevel%</span>
-                    </div>
-
-                    <div class="volume-control">
-                        <label class="volume-name">
+                        @* Кнопка отключения динамика (опционально) *@
+                        @* <button class="control-btn speaker-toggle" title="Отключить звук собеседника">
                             <i class="fas fa-volume-up"></i>
-                            Громкость собеседника
-                        </label>
-                        <input type="range" 
-                               class="volume-slider" 
-                               min="0" 
-                               max="100" 
-                               @bind="speakerLevel"
-                               disabled="@audioMuted">
-                        <span class="volume-percent">@speakerLevel%</span>
+                        </button> *@
                     </div>
-                </div>
-
-                <div class="call-stats">
-                    <div class="stat">
-                        <i class="fas fa-signal"></i>
-                        <span>Качество: <strong>@connectionStatus</strong></span>
-                    </div>
-                    <div class="stat">
-                        <i class="fas fa-tachometer-alt"></i>
-                        <span>Задержка: <strong>@ping мс</strong></span>
+                    
+                    <div class="partner-id-footer">
+                         Анонимный ID собеседника: **@interviewerClientID**
                     </div>
                 </div>
             }
             else
             {
-                <div class="no-call">
-                    <div class="no-call-icon">
-                        <i class="fas fa-phone-volume"></i>
-                    </div>
-                    <div class="no-call-title">Готов к разговору?</div>
-                    <div class="no-call-desc">
-                        Заполните фильтры поиска и нажмите "Начать поиск" чтобы найти собеседника для голосового общения
-                    </div>
-                    <div class="audio-tip">
-                        <i class="fas fa-info-circle"></i>
-                        Убедитесь, что ваш микрофон подключен и разрешен в браузере
-                    </div>
+                
+                @* состояние без активного чата (Оставлено без изменений) *@
+                <div class="no-chat-state">
+                    
+                    @if (isSearching)
+                    {
+                        <div class="search-status">
+                            <div class="search-animation">
+                                <div class="search-dot"></div>
+                                <div class="search-dot"></div>
+                                <div class="search-dot"></div>
+                                </div>
+                            <div class="search-text">Ищем собеседника...</div>
+                            </div>
+                    }
+                    else
+                    {
+                        <div class="no-chat-icon">
+                            <i class="fas fa-headset"></i> @* Обновил иконку *@
+                        </div>
+                        <div class="no-chat-title">Готов к голосовому общению?</div>
+                        <div class="no-chat-description">
+                            Настройте фильтры и нажмите "**Начать поиск**"
+                        </div>
+                    }
+                    
+                    
                 </div>
+                
+                
             }
         </div>
     </div>
 </div>
 
-@code {
-    private string myGender = "";
-    private int myAge = 0;
-    private string targetGender = "any";
-    private int minAge = 16;
-    private int maxAge = 60;
-    private bool searchActive = false;
-    private VoicePartner? currentPartner = null;
-    private bool micMuted = false;
-    private bool audioMuted = false;
-    private int micLevel = 80;
-    private int speakerLevel = 80;
-    private bool userSpeaking = false;
-    private bool partnerSpeaking = false;
-    private string callTime = "00:00";
-    private string connectionStatus = "Отлично";
-    private int ping = 45;
-    private string connectionId = "user-12345";
-    private bool connected = true;
-    private Timer? callTimer;
-    private bool disposed = false;
-
-    public class VoicePartner
-    {
-        public string Id { get; set; } = "";
-        public string Gender { get; set; } = "";
-        public int Age { get; set; }
-    }
-
-    private bool CanSearch()
-    {
-        return !string.IsNullOrEmpty(myGender) && 
-               myAge > 0 && 
-               !searchActive && 
-               currentPartner == null;
-    }
-
-    private async Task BeginSearch()
-    {
-        searchActive = true;
-        StateHasChanged();
-        await Task.Delay(2000);
-        searchActive = false;
-        StateHasChanged();
-    }
-
-    private async Task EndSearch()
-    {
-        searchActive = false;
-        StateHasChanged();
-    }
-
-    private async Task HangUp()
-    {
-        currentPartner = null;
-        micMuted = false;
-        audioMuted = false;
-        userSpeaking = false;
-        partnerSpeaking = false;
-        callTime = "00:00";
-        callTimer?.Dispose();
-        callTimer = null;
-        StateHasChanged();
-    }
-
-    private async Task SimulateVoicePattern()
+@* Модальное окно бана (Оставлено без изменений) *@
+@if (isUserBanned)
 {
-    var rand = new Random();
-    while (currentPartner != null && !disposed)
-    {
-        await Task.Delay(rand.Next(1000, 5000));
-        
-        if (currentPartner == null || disposed) break;
-        double randomValue = rand.NextDouble();
-        
-        if (randomValue < 0.4)
-        {
-            partnerSpeaking = true;
-            userSpeaking = false;
-        }
-        else if (randomValue < 0.7)
-        {
-            partnerSpeaking = false;
-            userSpeaking = true;
-        }
-        else if (randomValue < 0.9)
-        {
-            //оба говорят одновременно
-            partnerSpeaking = true;
-            userSpeaking = true;
-        }
-        else
-        {
-            partnerSpeaking = false;
-            userSpeaking = false;
-            await InvokeAsync(StateHasChanged);
-            await Task.Delay(rand.Next(500, 1500));
-            continue;
-        }
-        
-        await InvokeAsync(StateHasChanged);
-        
-        int speechDuration = rand.Next(5000, 10000);
-        await Task.Delay(speechDuration);
-        
-        if (currentPartner == null || disposed) break;
-        
-        if (rand.NextDouble() < 0.6)
-        {
-            partnerSpeaking = false;
-            userSpeaking = false;
-        }
-        else
-        {
-            if (partnerSpeaking && userSpeaking)
-            {
-                if (rand.NextDouble() < 0.5)
-                {
-                    partnerSpeaking = true;
-                    userSpeaking = false;
-                }
-                else
-                {
-                    partnerSpeaking = false;
-                    userSpeaking = true;
-                }
-            }
-            else if (partnerSpeaking)
-            {
-                userSpeaking = false;
-            }
-            else if (userSpeaking)
-            {
-                partnerSpeaking = false;
-            }
-        }
-        
-        await InvokeAsync(StateHasChanged);
-        
-        if (partnerSpeaking || userSpeaking)
-        {
-            await Task.Delay(rand.Next(500, 2000));
+    <div class="ban-system-overlay">
+        <div class="ban-system-modal">
+            <div class="ban-system-header">
+                <div class="ban-system-icon">
+                    <i class="fas fa-ban"></i>
+                </div>
+                <h2 class="ban-system-title">Доступ ограничен</h2>
+                <div class="ban-system-subtitle">Ваш аккаунт был заблокирован администрацией</div>
+            </div>
             
-            if (currentPartner == null || disposed) break;
-            
-            partnerSpeaking = false;
-            userSpeaking = false;
-            await InvokeAsync(StateHasChanged);
-        }
-    }
+            <div class="ban-system-content">
+                <div class="ban-system-info-card">
+                    <div class="ban-system-detail">
+                        <div class="ban-system-detail-label">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Причина блокировки:
+                        </div>
+                        <div class="ban-system-detail-value">Нарушение правил сообщества</div>
+                    </div>
+                    
+                    <div class="ban-system-detail">
+                        <div class="ban-system-detail-label">
+                            <i class="fas fa-clock"></i>
+                            Дата блокировки:
+                        </div>
+                        <div class="ban-system-detail-value">-----</div>
+                    </div>
+                    
+                    <div class="ban-system-detail">
+                        <div class="ban-system-detail-label">
+                            <i class="fas fa-id-card"></i>
+                            Ваш ID:
+                        </div>
+                        <div class="ban-system-detail-value">@yourClientID</div>
+                    </div>
+                </div>
+                
+                <div class="ban-system-message">
+                    <p>К сожалению, вы не можете участвовать в чате. Если считаете, что это ошибка, обратитесь в техподдержку.</p>
+                </div>
+                
+                <div class="ban-system-actions">
+                    <button class="ban-system-btn ban-system-secondary" @onclick="BanReboot_Btn">
+                        <i class="fas fa-sync-alt"></i>
+                        Перезагрузить
+                    </button>
+                    <button class="ban-system-btn ban-system-primary" @onclick="BanSendTechSupport_Btn">
+                        <i class="fas fa-headset"></i>
+                        Техподдержка
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 }
+
+@* Toast уведомление (Оставлено без изменений) *@
+<div class="toast-container @(ShowToast ? "show" : "")">
+    <div class="toast-message">
+        <i class="fas fa-check-circle"></i>
+        ✅ Ваша заявка принята
+    </div>
+</div>
+
+
+@code
+{
     
-    private void ToggleMic()
+    // Состояние звонка
+    private bool isCallActive = false; // true, когда собеседник найден и звонок установлен
+    private bool isLocalMicMuted = false; // Состояние микрофона пользователя
+    private bool isPartnerSpeaking = false; // Индикатор, говорит ли собеседник
+    private string callTimer = "00:00"; // Таймер звонка
+    
+    private bool isSearching = false;
+    
+    private string myGender = "male";
+    private int myAge = 16;
+    
+    private string targetGender = "any";
+    private int partnerAge = 16;
+    
+    //матчмейкинг
+
+    private (string?, string?) pair;
+    
+    
+    private async Task StartSearch()
     {
-        micMuted = !micMuted;
+        // проверяем что нельзя начать поиск без своего ID
+        if(string.IsNullOrEmpty(yourClientID)) return;
+
+        isSearching = true;
+        
+        _matchMakingService.AddToQueue(yourClientID, myGender, myAge.ToString(), targetGender, partnerAge.ToString());
+        
+        
+        while (isSearching)
+        {
+            pair = _matchMakingService.SearchCommand(yourClientID);
+            // ищем Id собеседника
+            if (!string.IsNullOrEmpty(pair.Item1) && pair.Item1 != yourClientID)
+            {
+                interviewerClientID = pair.Item1;
+                isSearching = false;
+            }
+            else if (!string.IsNullOrEmpty(pair.Item2) && pair.Item2 != yourClientID)
+            {
+                interviewerClientID = pair.Item2;
+                isSearching = false;
+            }
+            
+            await InvokeAsync(StateHasChanged);
+            await Task.Delay(1000);
+        }
+        
+    }
+
+    // останавливаем поиск
+    private async Task StopSearch()
+    {
+        isSearching = false;
+        if (!string.IsNullOrEmpty(yourClientID))
+        {
+            _matchMakingService.RemoveFromQueue(yourClientID);
+        }
+        pair = (null, null); // Сбрасываем найденную пару
         StateHasChanged();
     }
 
-    private void ToggleAudio()
+    // выходим из чата с собеседником
+    private async Task DisconnectFromPartner()
     {
-        audioMuted = !audioMuted;
+        if (!string.IsNullOrEmpty(interviewerClientID))
+        {
+            await hubConnection.InvokeAsync("NotifyOfLeave", interviewerClientID);
+        }
+        interviewerClientID = null;
+        isSearching = false;
         StateHasChanged();
     }
 
-    private async Task InitiateTestCall()
+    public async ValueTask DisposeAsync()
     {
-        currentPartner = new VoicePartner
+        if (hubConnection is not null)
         {
-            Id = "test-123",
-            Gender = "female",
-            Age = 24
-        };
-
-        StartCallTimer();
-        _ = SimulateVoicePattern();
-        _ = SimulateNetworkStats();
-        StateHasChanged();
-    }
-
-    private void StartCallTimer()
-    {
-        var start = DateTime.Now;
-        callTimer = new Timer(async _ =>
-        {
-            if (disposed || currentPartner == null) return;
-            
-            var time = DateTime.Now - start;
-            callTime = $"{(int)time.TotalMinutes:D2}:{time.Seconds:D2}";
-            await InvokeAsync(StateHasChanged);
-        }, null, 0, 1000);
-    }
-
-    private async Task SimulateNetworkStats()
-    {
-        var rand = new Random();
-        string[] statuses = { "Отлично", "Хорошо", "Нормально" };
-        while (currentPartner != null && !disposed)
-        {
-            await Task.Delay(5000);
-            connectionStatus = statuses[rand.Next(0, statuses.Length)];
-            ping = rand.Next(20, 100);
-            await InvokeAsync(StateHasChanged);
-        }
-    }
-
-    public void Dispose()
-    {
-        disposed = true;
-        callTimer?.Dispose();
-    }
-}
-
-<script>
-    let audioCtx;
-    let soundAnalyzer;
-    let micStream;
-    let frequencyData;
-    let dataSize;
-    let micActive = false;
-    let netRef = null;
-    let monitoringInterval = null;
-
-    window.registerNetReference = function(reference) {
-        netRef = reference;
-        console.log('.NET reference registered');
-    };
-
-    window.startMicrophoneMonitoring = async function() {
-        try {
-            console.log('Requesting microphone access...');
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                audio: {
-                    echoCancellation: true,
-                    noiseSuppression: true,
-                    autoGainControl: true
-                } 
-            });
-            
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            soundAnalyzer = audioCtx.createAnalyser();
-            micStream = audioCtx.createMediaStreamSource(stream);
-            
-            soundAnalyzer.fftSize = 512;
-            soundAnalyzer.smoothingTimeConstant = 0.8;
-            dataSize = soundAnalyzer.frequencyBinCount;
-            frequencyData = new Uint8Array(dataSize);
-            
-            micStream.connect(soundAnalyzer);
-            micActive = true;
-            
-            console.log('Microphone connected, starting monitoring');
-            monitorMicrophone();
-        } catch (err) {
-            console.error('Microphone access error:', err);
-            alert('Не удалось получить доступ к микрофону: ' + err.message);
-            micActive = false;
-        }
-    };
-
-    window.stopMicrophoneMonitoring = function() {
-        if (monitoringInterval) {
-            clearInterval(monitoringInterval);
-            monitoringInterval = null;
+            await DisconnectFromPartner();
+            await hubConnection.DisposeAsync();
+            await StopSearch();
+            dotNetRef?.Dispose();
         }
         
-        if (micStream && audioCtx) {
-            micStream.disconnect();
-            audioCtx.close();
-            micActive = false;
-        }
+    }
+    
+    private async Task ToggleMicMute()
+    {
         
-        console.log('Microphone monitoring stopped');
-    };
-
-    let lastSpeakingState = false;
-
-    function monitorMicrophone() {
-        if (!micActive || !soundAnalyzer || !netRef) return;
-        
-        monitoringInterval = setInterval(() => {
-            if (!micActive) return;
-            
-            soundAnalyzer.getByteFrequencyData(frequencyData);
-            
-            // Считаем средний уровень
-            let total = 0;
-            for (let i = 0; i < dataSize; i++) {
-                total += frequencyData[i];
-            }
-            const avg = total / dataSize;
-            const normalized = avg / 255;
-            
-            // Порог для определения речи
-            const threshold = 0.02;
-            const speaking = normalized > threshold;
-            
-            // Уведомляем C# только при изменении
-            if (speaking !== lastSpeakingState) {
-                lastSpeakingState = speaking;
-                netRef.invokeMethodAsync('SetSpeakingState', speaking);
-                console.log('Speaking state changed:', speaking, 'Level:', normalized.toFixed(4));
-            }
-        }, 100);
-    }
-</script>
-
-<style>
-:root {
-    --primary: #6366f1;
-    --accent: #ec4899;
-    --success: #10b981;
-    --error: #ef4444;
-    --warning: #f59e0b;
-    --bg-dark: #0f0f23;
-    --bg-card: #1a1a2e;
-    --bg-panel: #16213e;
-    --text-main: #ffffff;
-    --text-dim: #cbd5e1;
-    --text-muted: #64748b;
-    --border: #334155;
-}
-
-body {
-    background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-card) 100%);
-    min-height: 100vh;
-    font-family: 'Inter', system-ui, sans-serif;
-    color: var(--text-main);
-    margin: 0;
-    padding: 0;
-}
-
-.voice-chat-app {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 1.5rem;
-    min-height: 100vh;
-}
-
-.app-header {
-    text-align: center;
-    margin-bottom: 2rem;
-}
-
-.app-title {
-    font-size: 2.5rem;
-    font-weight: 800;
-    color: var(--primary);
-    margin: 0 0 0.5rem 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-}
-
-.app-title i {
-    color: var(--accent);
-}
-
-.app-subtitle {
-    color: var(--text-dim);
-    font-size: 1.1rem;
-}
-
-.status-panel {
-    background: var(--bg-panel);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-}
-
-.connection-status {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 1rem;
-}
-
-.status-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-}
-
-.status-online { background-color: var(--success); }
-.status-offline { background-color: var(--error); }
-
-.status-text {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-weight: 600;
-}
-
-.user-info {
-    background: var(--bg-card);
-    padding: 1rem;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-}
-
-.user-id {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--text-dim);
-}
-
-.id-value {
-    color: var(--primary);
-    background: var(--bg-dark);
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-family: monospace;
-}
-
-.main-content {
-    display: grid;
-    grid-template-columns: 350px 1fr;
-    gap: 2rem;
-}
-
-.search-sidebar {
-    background: var(--bg-panel);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1.5rem;
-    height: fit-content;
-    position: sticky;
-    top: 1rem;
-}
-
-.sidebar-header {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 2rem;
-    color: var(--primary);
-    font-weight: 700;
-    font-size: 1.25rem;
-}
-
-.filter-block {
-    margin-bottom: 2rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid var(--border);
-}
-
-.block-title {
-    font-weight: 700;
-    margin-bottom: 1rem;
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.filter-item {
-    margin-bottom: 1.25rem;
-}
-
-.filter-name {
-    display: block;
-    margin-bottom: 0.75rem;
-    font-weight: 600;
-    color: var(--text-dim);
-    font-size: 0.9rem;
-}
-
-.radio-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.radio-choice {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 6px;
-}
-
-.radio-choice:hover {
-    background: var(--bg-card);
-}
-
-.radio-choice input {
-    display: none;
-}
-
-.radio-dot {
-    width: 16px;
-    height: 16px;
-    border: 2px solid var(--border);
-    border-radius: 50%;
-}
-
-.radio-choice input:checked + .radio-dot {
-    border-color: var(--primary);
-    background: var(--primary);
-}
-
-.gender-icon.male { color: #3b82f6; }
-.gender-icon.female { color: #ec4899; }
-
-.filter-dropdown {
-    width: 100%;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 0.75rem;
-    color: var(--text-main);
-    cursor: pointer;
-}
-
-.age-selectors {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-
-.filter-dropdown.small {
-    width: auto;
-    min-width: 80px;
-}
-
-.age-dash {
-    color: var(--text-muted);
-}
-
-.search-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
-}
-
-.debug-section {
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--border);
-}
-
-.btn {
-    padding: 0.75rem 1rem;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-}
-
-.btn.primary {
-    background: var(--primary);
-    color: white;
-}
-
-.btn.secondary {
-    background: var(--error);
-    color: white;
-}
-
-.btn.debug {
-    background: var(--warning);
-    color: white;
-}
-
-.btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.searching-indicator {
-    text-align: center;
-    padding: 1rem;
-    background: var(--bg-card);
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    margin-top: 1rem;
-}
-
-.searching-animation {
-    display: flex;
-    justify-content: center;
-    gap: 0.25rem;
-    margin-bottom: 0.75rem;
-}
-
-.searching-dot {
-    width: 8px;
-    height: 8px;
-    background: var(--primary);
-    border-radius: 50%;
-    animation: search-pulse 1.5s infinite;
-}
-
-.searching-dot:nth-child(2) { animation-delay: 0.2s; }
-.searching-dot:nth-child(3) { animation-delay: 0.4s; }
-
-@@keyframes search-pulse {
-    0%, 60%, 100% { opacity: 0.3; }
-    30% { opacity: 1; transform: scale(1.2); }
-}
-
-.searching-text {
-    color: var(--text-dim);
-    font-weight: 500;
-}
-
-.voice-main {
-    background: var(--bg-panel);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    display: flex;
-    flex-direction: column;
-    min-height: 600px;
-}
-
-.call-info {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1.5rem;
-    border-bottom: 1px solid var(--border);
-    background: var(--bg-card);
-    border-radius: 12px 12px 0 0;
-}
-
-.partner-avatar {
-    width: 60px;
-    height: 60px;
-    background: var(--primary);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 1.5rem;
-}
-
-.partner-details {
-    flex: 1;
-}
-
-.partner-name {
-    font-weight: 700;
-    font-size: 1.1rem;
-    margin-bottom: 0.25rem;
-}
-
-.partner-info {
-    color: var(--text-dim);
-    font-size: 0.9rem;
-}
-
-.end-call-btn {
-    background: var(--error);
-    border: none;
-    border-radius: 50%;
-    width: 48px;
-    height: 48px;
-    color: white;
-    cursor: pointer;
-}
-
-.voice-display {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 3rem 2rem;
-    position: relative;
-}
-
-.call-time {
-    position: absolute;
-    top: 2rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--primary);
-    font-family: monospace;
-}
-
-.voice-animation {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12rem;
-    position: relative;
-    margin: 2rem 0;
-}
-
-.user-avatar, .partner-avatar-anim {
-    width: 140px;
-    height: 140px;
-    border-radius: 50%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: 3rem;
-    border: 4px solid var(--border);
-    background: var(--bg-card);
-    position: relative;
-    z-index: 2;
-}
-
-.user-avatar {
-    color: var(--primary);
-}
-
-.partner-avatar-anim {
-    color: var(--accent);
-}
-
-.user-avatar.speaking {
-    border-color: var(--primary);
-    box-shadow: 0 0 30px rgba(99, 102, 241, 0.6);
-    transform: scale(1.05);
-    transition: all 0.3s ease;
-}
-
-.partner-avatar-anim.speaking {
-    border-color: var(--accent);
-    box-shadow: 0 0 30px rgba(236, 72, 153, 0.6);
-    transform: scale(1.05);
-    transition: all 0.3s ease;
-}
-
-.avatar-label {
-    position: absolute;
-    bottom: -30px;
-    font-size: 0.85rem;
-    color: var(--text-dim);
-    font-weight: 600;
-}
-
-.connection-line {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 280px;
-    height: 4px;
-    background: var(--border);
-    border-radius: 2px;
-    overflow: hidden;
-    z-index: 1;
-}
-
-.signal {
-    position: absolute;
-    width: 40px;
-    height: 100%;
-    opacity: 0;
-}
-
-.signal.active {
-    opacity: 1;
-}
-
-.signal.user-signal {
-    background: linear-gradient(90deg, transparent, var(--primary), transparent);
-    animation: signal-user 1.5s infinite;
-}
-
-.signal.partner-signal {
-    background: linear-gradient(90deg, transparent, var(--accent), transparent);
-    animation: signal-partner 1.5s infinite;
-}
-
-@@keyframes signal-user {
-    0% { left: -40px; }
-    100% { left: 100%; }
-}
-
-@@keyframes signal-partner {
-    0% { right: -40px; left: auto; }
-    100% { right: 100%; left: auto; }
-}
-
-.talk-status {
-    margin-top: 2rem;
-}
-
-.status-message {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-dim);
-    padding: 0.75rem 1.5rem;
-    background: var(--bg-card);
-    border-radius: 24px;
-    border: 2px solid var(--border);
-}
-
-.status-message.active {
-    color: var(--primary);
-    border-color: var(--primary);
-    background: rgba(99, 102, 241, 0.1);
-}
-
-.status-message.partner {
-    color: var(--accent);
-    border-color: var(--accent);
-    background: rgba(236, 72, 153, 0.1);
-}
-
-.control-panel {
-    display: flex;
-    justify-content: center;
-    gap: 2rem;
-    padding: 2rem;
-    border-top: 1px solid var(--border);
-    background: var(--bg-card);
-}
-
-.control-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.control-button {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    border: 2px solid var(--border);
-    background: var(--bg-panel);
-    color: var(--text-main);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-}
-
-.control-button:hover {
-    transform: scale(1.1);
-    background: var(--primary);
-    color: white;
-    border-color: var(--primary);
-}
-
-.control-button.off {
-    background: var(--error);
-    color: white;
-    border-color: var(--error);
-}
-
-.control-button.hangup {
-    width: 72px;
-    height: 72px;
-    background: var(--error);
-    color: white;
-    border-color: var(--error);
-}
-
-.control-name {
-    font-size: 0.85rem;
-    color: var(--text-dim);
-    font-weight: 600;
-}
-
-.volume-panel {
-    padding: 2rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    border-top: 1px solid var(--border);
-}
-
-.volume-control {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.volume-name {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    min-width: 200px;
-    color: var(--text-dim);
-    font-weight: 600;
-    font-size: 0.9rem;
-}
-
-.volume-slider {
-    flex: 1;
-    height: 6px;
-    border-radius: 3px;
-    background: var(--bg-card);
-    outline: none;
-}
-
-.volume-slider::-webkit-slider-thumb {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: var(--primary);
-    cursor: pointer;
-}
-
-.volume-slider::-moz-range-thumb {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: var(--primary);
-    cursor: pointer;
-    border: none;
-}
-
-.volume-slider:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
-.volume-percent {
-    min-width: 50px;
-    text-align: right;
-    color: var(--primary);
-    font-weight: 700;
-    font-family: monospace;
-}
-
-.call-stats {
-    display: flex;
-    justify-content: space-around;
-    padding: 1.5rem;
-    background: var(--bg-card);
-    border-radius: 0 0 12px 12px;
-}
-
-.stat {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--text-dim);
-    font-size: 0.9rem;
-}
-
-.stat i {
-    color: var(--primary);
-}
-
-.stat strong {
-    color: var(--text-main);
-    font-weight: 600;
-}
-
-.no-call {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 3rem;
-    text-align: center;
-}
-
-.no-call-icon {
-    font-size: 4rem;
-    color: var(--primary);
-    margin-bottom: 1.5rem;
-}
-
-.no-call-title {
-    font-size: 1.75rem;
-    font-weight: 700;
-    margin-bottom: 0.75rem;
-}
-
-.no-call-desc {
-    color: var(--text-dim);
-    max-width: 400px;
-    line-height: 1.6;
-    margin-bottom: 2rem;
-    font-size: 1.05rem;
-}
-
-.audio-tip {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    background: rgba(99, 102, 241, 0.1);
-    border: 1px solid var(--primary);
-    border-radius: 8px;
-    color: var(--primary);
-    font-size: 0.9rem;
-}
-
-@@media (max-width: 1024px) {
-    .main-content {
-        grid-template-columns: 1fr;
     }
     
-    .search-sidebar {
-        position: static;
-    }
 }
-
-@@media (max-width: 768px) {
-    .voice-chat-app {
-        padding: 1rem;
-    }
-    
-    .app-title {
-        font-size: 2rem;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-    
-    .voice-animation {
-        gap: 6rem;
-    }
-    
-    .user-avatar, .partner-avatar-anim {
-        width: 100px;
-        height: 100px;
-        font-size: 2rem;
-    }
-    
-    .connection-line {
-        width: 180px;
-    }
-    
-    .avatar-label {
-        bottom: -25px;
-        font-size: 0.75rem;
-    }
-    
-    .control-panel {
-        gap: 1rem;
-    }
-    
-    .control-button {
-        width: 56px;
-        height: 56px;
-        font-size: 1.25rem;
-    }
-    
-    .control-button.hangup {
-        width: 64px;
-        height: 64px;
-    }
-    
-    .volume-name {
-        min-width: 150px;
-        font-size: 0.85rem;
-    }
-    
-    .call-stats {
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-}
-</style>

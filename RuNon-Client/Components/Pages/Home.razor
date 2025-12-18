@@ -1,14 +1,17 @@
 ﻿@page "/"
 @using Microsoft.AspNetCore.SignalR.Client
 @using RuNon_Client.Services
-
 @using RuNon_Client.Components.Pages 
 @implements IAsyncDisposable
 @inject MatchMakingService _matchMakingService
-
+@inherits RuNon_Client.Components.Pages.ChatBase
 @rendermode InteractiveServer
 
-
+<head>
+    <link rel="icon" type="image/x-icon" href="images/favicon.png" />
+    <link rel="shortcut icon" type="image/x-icon" href="images/favicon.png" />
+    <title>Текстовый чат</title>
+</head>
 
 <div class="chat-container">
     @* Заголовок приложения *@
@@ -158,13 +161,16 @@
                 @* информация о текущем собеседнике *@
                 <div class="partner-info">
                     <div class="partner-avatar">
-                        @switch (new Random().Next(1,3))
+                        @switch (avatarNumber)
                         {
                             case 1:
                                 <img class="local-avatar-img" src="images/ava_1.png"/>
                                 break;
                             case 2:
                                 <img class="local-avatar-img" src="images/ava_2.png"/>
+                                break;
+                            case 3:
+                                <img class="local-avatar-img" src="images/ava_3.png"/>
                                 break;
                         }
                         
@@ -262,7 +268,6 @@
     </div>
 </div>
 
-
 @if (isUserBanned)
 {
     <div class="ban-system-overlay">
@@ -342,10 +347,13 @@
     
     //матчмейкинг
     private (string?, string?) pair;
-    
+
+    //выбор случайной аватарки пользователя
+    private int avatarNumber=1;
    
     private async Task StartSearch()
     {
+        avatarNumber = new Random().Next(1, 4);
         // проверяем что нельзя начать поиск без своего ID
         if(string.IsNullOrEmpty(yourClientID)) return;
 
@@ -376,7 +384,7 @@
     }
 
     // останавливаем поиск
-    private void StopSearch()
+    private async Task StopSearch()
     {
         isSearching = false;
         if (!string.IsNullOrEmpty(yourClientID))
@@ -401,12 +409,14 @@
         StateHasChanged();
     }
     
-    // при перезагрузки страницы оффаем SignalR подключение
+    // при перезагрузки страницы оффаем SignalR подключение и отключаем собеседников(чтобы не получилось одностороннего общения)
     public async ValueTask DisposeAsync()
-    {
+    {   
         if (hubConnection is not null)
         {
+            await DisconnectFromPartner();
             await hubConnection.DisposeAsync();
+            await StopSearch();
         }
     }
 }
