@@ -368,6 +368,8 @@
             await InvokeAsync(StateHasChanged);
             await Task.Delay(1000);
         }
+        roomId = GetUniqueRoomId(pair.Item1, pair.Item2);
+        await JoinRoom();
         
     }
 
@@ -386,22 +388,47 @@
     // выходим из чата с собеседником
     private async Task DisconnectFromPartner()
     {
-        if (!string.IsNullOrEmpty(interviewerClientID))
+        try
         {
-            await hubConnection.InvokeAsync("NotifyOfLeave", interviewerClientID);
+            if (!string.IsNullOrEmpty(interviewerClientID))
+            {
+                await hubConnection.InvokeAsync("NotifyOfLeave", interviewerClientID);
+            }
+            interviewerClientID = null;
+            isSearching = false;
+            await JSRuntime.InvokeVoidAsync("VoiceChat.leaveRoom");
+            StateHasChanged();
         }
-        interviewerClientID = null;
-        isSearching = false;
-        StateHasChanged();
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+        finally
+        {
+            dotNetRef?.Dispose();
+        }
     }
 
     public async ValueTask DisposeAsync()
     {
-        if (hubConnection is not null)
+        try
         {
-            await DisconnectFromPartner();
-            await hubConnection.DisposeAsync();
-            await StopSearch();
+            if (hubConnection is not null)
+            {
+                await DisconnectFromPartner();
+                await hubConnection.DisposeAsync();
+                await StopSearch();
+                dotNetRef?.Dispose();
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+        finally
+        {
             dotNetRef?.Dispose();
         }
         

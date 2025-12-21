@@ -4,6 +4,7 @@ using RuNon_Client.Services;
 using Microsoft.AspNetCore.SignalR;
 using System.Collections.Concurrent;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+using Serilog;
 
 
 namespace RuNon_Client.Hubs;
@@ -77,34 +78,39 @@ public class SimpleHub : Hub
             }
         }
     }
-
-    private const string ROOM_NAME = "VoiceRoom"; //   единая комната
+    
         
-    public async Task JoinRoom()
+    public async Task JoinRoom(string roomId)
     {
-        await Groups.AddToGroupAsync(Context.ConnectionId, ROOM_NAME);
-        Console.WriteLine($"[Hub] {Context.ConnectionId} присоединился к комнате");
-            
-        // закидываю уведы
-        await Clients.OthersInGroup(ROOM_NAME).SendAsync("UserJoined", Context.ConnectionId);
+        // добавляем текущего юзера в конкретную группу SignalR
+        await Groups.AddToGroupAsync(Context.ConnectionId, roomId);
+        Log.Information("[Hub] {Context.ConnectionId} вошел в комнату {roomId}",
+            Context.ConnectionId, roomId);
+        
+        await Clients.OthersInGroup(roomId).SendAsync("UserJoined", Context.ConnectionId);
     }
         
-    public async Task SendOfferToRoom(string offer)
+    public async Task SendOfferToRoom(string roomId,string offer)
     {
-        Console.WriteLine($"[Hub] {Context.ConnectionId} отправил Offer в комнату");
+        Log.Debug("[Hub] {Context.ConnectionId} отправил Offer в комнату {roomId}",
+            Context.ConnectionId, roomId);
         
-        await Clients.OthersInGroup(ROOM_NAME).SendAsync("ReceiveOffer", offer, Context.ConnectionId);
+        await Clients.OthersInGroup(roomId).SendAsync("ReceiveOffer", offer, Context.ConnectionId);
     }
         
     public async Task SendAnswerToUser(string targetId, string answer)
     {
-        Console.WriteLine($"[Hub] {Context.ConnectionId} отправил Answer к {targetId}");
+        Log.Debug("[Hub] {Context.ConnectionId} отправил Answer к {targetId}",
+            Context.ConnectionId, targetId);
+        
         await Clients.Client(targetId).SendAsync("ReceiveAnswer", answer);
     }
         
     public async Task SendIceCandidateToUser(string targetId, string candidate)
     {
-        Console.WriteLine($"[Hub] {Context.ConnectionId} отправил ICE к {targetId}");
+        Log.Debug("[Hub] {Context.ConnectionId} отправил ICE к {targetId}",
+            Context.ConnectionId, targetId );
+        
         await Clients.Client(targetId).SendAsync("ReceiveIceCandidate", candidate);
     }
     
@@ -112,8 +118,7 @@ public class SimpleHub : Hub
     // апдейтим лог при отключении нового клиента    
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        Console.WriteLine($"[Hub] {Context.ConnectionId} отключился");
-        await Clients.OthersInGroup(ROOM_NAME).SendAsync("UserLeft", Context.ConnectionId);
+        Log.Information("[Hub] {Context.ConnectionId} отключился", Context.ConnectionId);
         await base.OnDisconnectedAsync(exception);
     }
 
@@ -121,7 +126,7 @@ public class SimpleHub : Hub
     // апдейтим лог при подключении нового клиента
     public override Task OnConnectedAsync()
     {
-        Console.WriteLine($"[Hub] {Context.ConnectionId} подключился");
+        Log.Information("[Hub] {Context.ConnectionId} подключился", Context.ConnectionId);
         return base.OnConnectedAsync();
     }
     

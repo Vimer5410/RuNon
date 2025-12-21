@@ -16,7 +16,32 @@
             alert("Не удалось получить доступ к микрофону!");
         }
     },
+    
+    async leaveRoom() {
+        console.log("[JS] Покидаю комнату");
 
+        if (this.connection) {
+            this.connection.close();
+            this.connection = null;
+        }
+
+        if (this.localStream) {
+            this.localStream.getTracks().forEach(track => {
+                track.stop();
+                console.log("[JS] Остановлен трек:", track.kind);
+            });
+            this.localStream = null;
+        }
+
+        const audio = document.getElementById('remote-audio');
+        if (audio) {
+            audio.remove();
+            console.log("[JS] Audio элемент удалён");
+        }
+
+        this.remoteUserId = null;
+    },
+    
     async createConnectionForUser(userId, dotNetRef) {
         console.log("[JS] Создание connection для", userId);
 

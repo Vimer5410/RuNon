@@ -11,6 +11,7 @@ Log.Logger = new LoggerConfiguration()
     
     .MinimumLevel.Information() 
     
+    //вкл выкл програмных ошибок майков
     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning) 
     
     .WriteTo.Console(
