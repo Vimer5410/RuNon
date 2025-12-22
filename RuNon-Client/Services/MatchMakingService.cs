@@ -91,7 +91,7 @@ public class MatchMakingService
         }
         
         
-        Log.Information("[Match-Making] Пользователь {userId} был удален из очереди поиска", userId);
+        Log.Debug("[Match-Making] Пользователь {userId} был удален из очереди поиска", userId);
         
     }
 
@@ -100,7 +100,7 @@ public class MatchMakingService
         // проверка почтового ящика
         if (_completedMatches.TryRemove(userID, out var activePartnerID))
         {
-            Log.Information($"[Match-Making] {userID} (пассивный) уведомлен о матче с {activePartnerID}");
+            Log.Debug($"[Match-Making] {userID} (пассивный) уведомлен о матче с {activePartnerID}");
             // возвращаем пару(мой айди + айди того кто меня нашел)
             return (userID, activePartnerID);
         }
@@ -118,7 +118,7 @@ public class MatchMakingService
 
             if (PeopleInQueue.Count<2)
             {
-                Log.Information("[Match-Making] Недостаточно пользователей для поиска");
+                Log.Debug("[Match-Making] Недостаточно пользователей для поиска");
                 return (null, null);
             }
             
@@ -146,7 +146,7 @@ public class MatchMakingService
             }
             else
             {
-                Log.Information("[Match-Making] Для пользователя {userId} нет ни одной подходящей очереди", userID);
+                Log.Debug("[Match-Making] Для пользователя {userId} нет ни одной подходящей очереди", userID);
                 return (null, null);
             }
 
@@ -181,7 +181,7 @@ public class MatchMakingService
                 var partnerStillExists = PeopleInQueue.Any(x => x.Item1 == partnerID);
                 if (!partnerStillExists) 
                 {
-                    Log.Information($"[Match-Making] Найденный match {partnerID} был удален другим потоком");
+                    Log.Debug($"[Match-Making] Найденный match {partnerID} был удален другим потоком");
                     return (null, null);
                 }
 
@@ -200,7 +200,7 @@ public class MatchMakingService
                 return foundPair;
             }
         
-            Log.Information("[Match-Making] Пара для {UserId} не найдена в целевом сегменте", userID);
+            Log.Debug("[Match-Making] Пара для {UserId} не найдена в целевом сегменте", userID);
             return (null, null);
     
         }

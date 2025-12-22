@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
+using Serilog;
+
 namespace RuNon_Client.Components.Pages;
 
 public partial class VoiceChat: ChatBase
@@ -10,7 +12,7 @@ public partial class VoiceChat: ChatBase
     private bool inRoom;
     private bool isConnecting;
     private string errorMessage = "";
-
+    private string roomId = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -30,37 +32,41 @@ public partial class VoiceChat: ChatBase
         // методы signalR хаба, которые касаются работы с WebRTC
         hubConnection.On<string>("UserJoined", async (userId) =>
         {
-            Console.WriteLine($"[C#] Пользователь присоединился: {userId}");
+            Log.Debug("[C#] Пользователь присоединился: {userId}", userId);
+            participantCount++;
             await InvokeAsync(StateHasChanged);
             await JSRuntime.InvokeVoidAsync("VoiceChat.handleUserJoined", userId, dotNetRef);
         });
                 
         hubConnection.On<string, string>("ReceiveOffer", async (offer, fromUserId) =>
         {
-            Console.WriteLine($"[C#] Получен Offer от {fromUserId}");
+            Log.Debug("[C#] Получен Offer от {fromUserId}", fromUserId);
             await JSRuntime.InvokeVoidAsync("VoiceChat.handleOffer", offer, fromUserId, dotNetRef);
         });
                 
         hubConnection.On<string>("ReceiveAnswer", async (answer) =>
         {
-            Console.WriteLine("[C#] Получен Answer");
+            Log.Debug("[C#] Получен Answer");
             await JSRuntime.InvokeVoidAsync("VoiceChat.handleAnswer", answer, "", dotNetRef);
         });
                 
         hubConnection.On<string>("ReceiveIceCandidate", async (candidate) =>
         {
-            Console.WriteLine("[C#] Получен ICE");
+            Log.Debug("[C#] Получен ICE");
             await JSRuntime.InvokeVoidAsync("VoiceChat.handleIce", candidate, "", dotNetRef);
         });
                 
         hubConnection.On<string>("UserLeft", async (userId) =>
         {
-            Console.WriteLine($"[C#] Пользователь вышел: {userId}");
+            Log.Debug("[C#] Пользователь вышел: {userId}");
+            participantCount = Math.Max(1, participantCount - 1);
             await InvokeAsync(StateHasChanged);
             await JSRuntime.InvokeVoidAsync("VoiceChat.handleUserLeft", userId);
         });
                 
-        Console.WriteLine($"[C#] Подключён к Hub! ID: {hubConnection.ConnectionId}");
+        Log.Information("[C#] Подключён к Hub! ID: {hubConnection.ConnectionId}",
+            hubConnection.ConnectionId);
+        
         StateHasChanged();
         await hubConnection.InvokeAsync("GetUserIp");
         
@@ -98,12 +104,12 @@ public partial class VoiceChat: ChatBase
         
         try
         {
-            Console.WriteLine("[C#] Вход в комнату...");
+            Log.Debug("[C#] Вход в комнату...");
             
             // Передаём dotNetRef в JS
             await JSRuntime.InvokeVoidAsync("VoiceChat.joinRoom", dotNetRef);
             inRoom = true;
-            Console.WriteLine("[C#] Успешно вошли в комнату!");
+            Log.Debug("[C#] Успешно вошел в комнату!");
         }
         catch (Exception ex)
         {
@@ -116,45 +122,48 @@ public partial class VoiceChat: ChatBase
             StateHasChanged();
         }
     }
-    
-    private void LeaveRoom()
+
+    private string GetUniqueRoomId(string userA, string userB)
     {
-        inRoom = false;
+        return string.Compare(userA, userB) < 0 
+            ? $"{userA}__{userB}" 
+            : $"{userB}__{userA}";
     }
     
     
     [JSInvokable]
     public async Task JoinRoomOnServer()
     {
-        Console.WriteLine($"[C#] JoinRoomOnServer вызван. ID: {hubConnection?.ConnectionId}");
+        Log.Debug("[C#] JoinRoomOnServer вызван. ID: {hubConnection?.ConnectionId}",
+            hubConnection?.ConnectionId);
         
         if (hubConnection == null || hubConnection.State != HubConnectionState.Connected)
         {
             throw new InvalidOperationException($"Hub не подключён. State: {hubConnection?.State}");
         }
         
-        await hubConnection.InvokeAsync("JoinRoom");
-        Console.WriteLine("[C#] JoinRoom успешно вызван на сервере");
+        await hubConnection.InvokeAsync("JoinRoom", roomId);
+        Log.Debug("[C#] JoinRoom успешно вызван на сервере");
     }
     
     [JSInvokable]
     public async Task SendOfferToRoom(string offer)
     {
-        Console.WriteLine("[C#] Отправка Offer в комнату");
-        await hubConnection!.InvokeAsync("SendOfferToRoom", offer);
+        Log.Debug("[C#] Отправка Offer в комнату");
+        await hubConnection!.InvokeAsync("SendOfferToRoom", roomId, offer);
     }
     
     [JSInvokable]
     public async Task SendAnswer(string targetId, string answer)
     {
-        Console.WriteLine($"[C#] Отправка Answer к {targetId}");
+        Log.Debug("[C#] Отправка Answer к {targetId}");
         await hubConnection!.InvokeAsync("SendAnswerToUser", targetId, answer);
     }
     
     [JSInvokable]
     public async Task SendIce(string targetId, string candidate)
     {
-        Console.WriteLine($"[C#] Отправка ICE к {targetId}");
+        Log.Debug("[C#] Отправка ICE к {targetId}", targetId);
         await hubConnection!.InvokeAsync("SendIceCandidateToUser", targetId, candidate);
     }
 }

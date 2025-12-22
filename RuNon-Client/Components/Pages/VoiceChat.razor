@@ -21,7 +21,7 @@
             <div class="header-section">
                 <h1 class="header-title">
                     <i class="fas fa-headset"></i> 
-                    Анонимный **Войс** Чат
+                    Анонимный Войс Чат
                 </h1>
                 <div class="header-subtitle">Найди собеседника по интересам</div>
             </div>
@@ -156,73 +156,101 @@
             
         </div>
     
-        @* основная область чата (Изменено для Войс Чата) *@
+        
         <div class="chat-area">
-            @* isCallActive - предполагаемое состояние, что P2P соединение установлено *@
             @if (!string.IsNullOrEmpty(interviewerClientID))
             {
-                <div class="voice-chat-active">
-                    
-                    @* Аватар и Индикатор активности собеседника *@
-                    <div class="partner-call-info @(isPartnerSpeaking ? "speaking" : "")">
-                        <div class="partner-avatar">
-                            @* Тут можно использовать более нейтральный аватар или заглушку *@
-                            <i class="fas fa-user-secret"></i>
-                        </div>
-                        <div class="partner-details">
-                            <div class="partner-name">Собеседник найден!</div>
-                            <div class="call-status-text">
-                                <i class="fas fa-headset"></i> **Идет разговор...**
-                            </div>
-                        </div>
-                        @* Визуализация голоса (простая) *@
-                        <div class="partner-voice-indicator">
-                            <div class="voice-bar bar-1"></div>
-                            <div class="voice-bar bar-2"></div>
-                            <div class="voice-bar bar-3"></div>
-                        </div>
+                @* информация о текущем собеседнике *@
+                <div class="partner-info">
+                    <div class="partner-avatar">
+                        @switch (avatarNumber)
+                        {
+                            case 1:
+                                <img class="local-avatar-img" src="images/ava_1.png"/>
+                                break;
+                            case 2:
+                                <img class="local-avatar-img" src="images/ava_2.png"/>
+                                break;
+                            case 3:
+                                <img class="local-avatar-img" src="images/ava_3.png"/>
+                                break;
+                        }
+                        
+                        <i class="fas fa-user-secret"></i>
                     </div>
-
-                    @* Таймер звонка *@
-                    <div class="call-timer">
-                        <i class="fas fa-clock"></i>
-                        <span>@callTimer</span> @* Нужно реализовать логику обновления в C# *@
-                    </div>
-    
-                    @* Элементы управления звонком *@
-                    <div class="call-controls">
-                        @* Кнопка микрофона *@
-                        <button class="control-btn mic-toggle @(isLocalMicMuted ? "muted" : "")" 
-                                @onclick="ToggleMicMute" 
-                                title="@(isLocalMicMuted ? "Включить микрофон" : "Выключить микрофон")">
-                            <i class="fas @(isLocalMicMuted ? "fa-microphone-slash" : "fa-microphone")"></i>
-                        </button>
-    
-                        @* Кнопка завершения чата *@
-                        <button class="control-btn end-call-btn" 
-                                @onclick="DisconnectFromPartner" 
-                                title="Завершить голосовой чат">
-                            <i class="fas fa-phone-slash"></i>
-                            **Завершить**
-                        </button>
-
-                        @* Кнопка отключения динамика (опционально) *@
-                        @* <button class="control-btn speaker-toggle" title="Отключить звук собеседника">
-                            <i class="fas fa-volume-up"></i>
-                        </button> *@
-                    </div>
-                    
-                    <div class="partner-id-footer">
-                         Анонимный ID собеседника: **@interviewerClientID**
+                    <div class="partner-details">
+                        <div class="partner-name">Собеседник найден!</div>
+                        <div class="partner-stats">
+                            ID: @interviewerClientID
+                        </div>
                     </div>
                 </div>
+        
+               <div class="voice-chat-content">
+    
+    @* Аватар и Индикатор активности собеседника *@
+    <div class="partner-call-card @(isPartnerSpeaking ? "speaking" : "")">
+        <div class="partner-call-avatar">
+            <i class="fas fa-user-secret"></i>
+            @* Эффект пульсации (как в дискорде) *@
+            <div class="pulse-ring"></div>
+        </div>
+        
+        <div class="partner-call-details">
+            <h3 class="partner-call-name">Аноним</h3>
+            <div class="call-status-badge">
+                <i class="fas fa-signal"></i>
+                <span>Идет разговор...</span>
+            </div>
+        </div>
+
+        @* Визуализация голоса *@
+        <div class="voice-visualizer">
+            <div class="voice-bar bar-1"></div>
+            <div class="voice-bar bar-2"></div>
+            <div class="voice-bar bar-3"></div>
+            <div class="voice-bar bar-4"></div>
+            <div class="voice-bar bar-5"></div>
+        </div>
+    </div>
+
+    @* Таймер звонка *@
+    <div class="voice-timer-display">
+        <i class="far fa-clock"></i>
+        <span>@callTimer</span>
+    </div>
+
+    @* Элементы управления звонком *@
+    <div class="voice-controls-panel">
+       @* Кнопка микрофона с PNG картинкой *@
+       <button class="control-circle-btn mic-btn @(isLocalMicMuted ? "muted" : "")" 
+               @onclick="ToggleMicMute" 
+               title="@(isLocalMicMuted ? "Включить микрофон" : "Выключить микрофон")">
+           
+           <img src="images/mic_mute_1.png" class="mic-png-icon" alt="Mic" />
+           
+           @if (isLocalMicMuted)
+           {
+               <div class="mute-cross-line"></div>
+           }
+       </button>
+
+        @* Кнопка завершения звонка *@
+        <button class="action-btn-large end-call-btn" 
+                @onclick="DisconnectFromPartner" 
+                title="Завершить голосовой чат">
+            <i class="fas fa-phone-slash"></i>
+            <span>Завершить</span>
+        </button>
+    </div>
+    
+</div>
+            
             }
             else
             {
-                
-                @* состояние без активного чата (Оставлено без изменений) *@
+                @* состояние без активного чата *@
                 <div class="no-chat-state">
-                    
                     @if (isSearching)
                     {
                         <div class="search-status">
@@ -230,25 +258,22 @@
                                 <div class="search-dot"></div>
                                 <div class="search-dot"></div>
                                 <div class="search-dot"></div>
-                                </div>
-                            <div class="search-text">Ищем собеседника...</div>
                             </div>
+                            <div class="search-text">Ищем собеседника...</div>
+                        </div>
                     }
                     else
                     {
                         <div class="no-chat-icon">
-                            <i class="fas fa-headset"></i> @* Обновил иконку *@
+                            <i class="fas fa-headset"></i>
                         </div>
                         <div class="no-chat-title">Готов к голосовому общению?</div>
                         <div class="no-chat-description">
-                            Настройте фильтры и нажмите "**Начать поиск**"
+                            Заполните фильтры поиска и нажмите 
+                            "Начать поиск"
                         </div>
                     }
-                    
-                    
                 </div>
-                
-                
             }
         </div>
     </div>
@@ -324,12 +349,14 @@
 
 @code
 {
+    private bool isLocalSpeaking = true;
     
     // Состояние звонка
     private bool isCallActive = false; // true, когда собеседник найден и звонок установлен
     private bool isLocalMicMuted = false; // Состояние микрофона пользователя
     private bool isPartnerSpeaking = false; // Индикатор, говорит ли собеседник
-    private string callTimer = "00:00"; // Таймер звонка
+    private DateTime now = Convert.ToDateTime(DateTime.Now.ToString("T")); // Таймер звонка
+    private string callTimer;
     
     private bool isSearching = false;
     
@@ -343,9 +370,13 @@
 
     private (string?, string?) pair;
     
+    //выбор случайной аватарки пользователя
+    private int avatarNumber=1;
     
     private async Task StartSearch()
     {
+        callTimer = "00:00"; // обнуляем таймер, чтобы не было бага остаточного значения
+        avatarNumber = new Random().Next(1, 4); // выбираем рандомную аватарку
         // проверяем что нельзя начать поиск без своего ID
         if(string.IsNullOrEmpty(yourClientID)) return;
 
@@ -372,7 +403,12 @@
             await InvokeAsync(StateHasChanged);
             await Task.Delay(1000);
         }
+        roomId = GetUniqueRoomId(pair.Item1, pair.Item2);
         
+        await JoinRoom();
+        
+        await StartClock(); //запускаем таймер
+
     }
 
     // останавливаем поиск
@@ -390,30 +426,64 @@
     // выходим из чата с собеседником
     private async Task DisconnectFromPartner()
     {
-        if (!string.IsNullOrEmpty(interviewerClientID))
+        try
         {
-            await hubConnection.InvokeAsync("NotifyOfLeave", interviewerClientID);
+            if (!string.IsNullOrEmpty(interviewerClientID))
+            {
+                await hubConnection.InvokeAsync("NotifyOfLeave", interviewerClientID);
+            }
+            interviewerClientID = null;
+            isSearching = false;
+            await JSRuntime.InvokeVoidAsync("VoiceChat.leaveRoom");
+            StateHasChanged();
         }
-        interviewerClientID = null;
-        isSearching = false;
-        StateHasChanged();
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+        
     }
 
     public async ValueTask DisposeAsync()
     {
-        if (hubConnection is not null)
+        try
         {
-            await DisconnectFromPartner();
-            await hubConnection.DisposeAsync();
-            await StopSearch();
-            dotNetRef?.Dispose();
+            if (hubConnection is not null)
+            {
+                await DisconnectFromPartner();
+                await hubConnection.DisposeAsync();
+                await StopSearch();
+                dotNetRef?.Dispose();
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
         }
         
     }
     
     private async Task ToggleMicMute()
     {
+        isLocalSpeaking = false;
+        isPartnerSpeaking = true;
+        await Task.Delay(10000);
+        isPartnerSpeaking = false;
+    }
+    
+    
+    private async Task StartClock()
+    {
+        now = DateTime.Now; 
         
+        while (!string.IsNullOrEmpty(interviewerClientID))
+        {
+            callTimer = (DateTime.Now - now).ToString(@"mm\:ss");
+            StateHasChanged();
+            await Task.Delay(1000);
+        }
     }
     
 }

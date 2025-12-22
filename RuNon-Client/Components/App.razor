@@ -10,11 +10,11 @@
     <link rel="stylesheet" href="@Assets["RuNon-Client.styles.css"]"/>
     <ImportMap/>
     <link rel="icon" type="image/png" href="images/Тейк3.png"/>
-    <HeadOutlet/>
+    <HeadOutlet @rendermode="new InteractiveServerRenderMode(false)"/>
 </head>
 
 <body>
-<Routes/>
+<Routes @rendermode="new InteractiveServerRenderMode(false)"/>
 <script src="_framework/blazor.web.js"></script>
 <script src="js/voicechat.js"></script>
 </body>

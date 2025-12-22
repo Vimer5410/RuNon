@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Data.Sqlite;
 using Microsoft.JSInterop;
 using RuNon_Client.Services;
+using Serilog;
+
 namespace RuNon_Client.Components.Pages;
 
 public abstract class ChatBase:ComponentBase
@@ -66,7 +68,7 @@ public abstract class ChatBase:ComponentBase
         }
         catch (Exception e)
         {
-            Console.WriteLine($"[HUB] Ошибка: {e}");
+            Log.Fatal("[HUB] Ошибка: {e}", e);
             throw;
         }
     }
@@ -135,11 +137,11 @@ public abstract class ChatBase:ComponentBase
         if (String.IsNullOrEmpty(userGuidLocalStorage.Value))
         {
             _protectedLocalStorage.SetAsync("user_id",userGuid);
-            Console.WriteLine($"Обнаружен новый GUID: {userGuid}");
+            Log.Information("Обнаружен новый GUID: {userGuid}", userGuid);
         }
         isUserBanned = await IsUserBanned(userIp, userGuidLocalStorage.Value);
         var banNotify = isUserBanned ? "Пользователь забанен" : "Пользователь чист";
-        Console.WriteLine(banNotify);
+        Log.Information("{banNotify}", banNotify);
     }
     
     private async Task BanTechSupport()
