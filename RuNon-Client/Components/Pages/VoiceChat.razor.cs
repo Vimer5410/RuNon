@@ -131,11 +131,6 @@ public partial class VoiceChat: ChatBase
             ? $"{userA}__{userB}" 
             : $"{userB}__{userA}";
     }
-    private void LeaveRoom()
-    {
-        inRoom = false;
-        participantCount = 1;
-    }
     
     
     [JSInvokable]
