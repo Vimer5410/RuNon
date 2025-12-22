@@ -9,9 +9,8 @@ public partial class VoiceChat: ChatBase
 {
     // из тестового войc чата
     private DotNetObjectReference<VoiceChat> dotNetRef;
-    private bool inRoom = false;
-    private bool isConnecting = false;
-    private int participantCount = 1;
+    private bool inRoom;
+    private bool isConnecting;
     private string errorMessage = "";
     private string roomId = "";
 
@@ -107,7 +106,6 @@ public partial class VoiceChat: ChatBase
         {
             Log.Debug("[C#] Вход в комнату...");
             
-            
             // Передаём dotNetRef в JS
             await JSRuntime.InvokeVoidAsync("VoiceChat.joinRoom", dotNetRef);
             inRoom = true;
@@ -168,5 +166,4 @@ public partial class VoiceChat: ChatBase
         Log.Debug("[C#] Отправка ICE к {targetId}", targetId);
         await hubConnection!.InvokeAsync("SendIceCandidateToUser", targetId, candidate);
     }
-    
 }
