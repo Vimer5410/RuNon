@@ -33,7 +33,6 @@ public partial class VoiceChat: ChatBase
         hubConnection.On<string>("UserJoined", async (userId) =>
         {
             Log.Debug("[C#] Пользователь присоединился: {userId}", userId);
-            participantCount++;
             await InvokeAsync(StateHasChanged);
             await JSRuntime.InvokeVoidAsync("VoiceChat.handleUserJoined", userId, dotNetRef);
         });
@@ -58,8 +57,7 @@ public partial class VoiceChat: ChatBase
                 
         hubConnection.On<string>("UserLeft", async (userId) =>
         {
-            Log.Debug("[C#] Пользователь вышел: {userId}");
-            participantCount = Math.Max(1, participantCount - 1);
+            Log.Debug("[C#] Пользователь вышел: {userId}", userId);
             await InvokeAsync(StateHasChanged);
             await JSRuntime.InvokeVoidAsync("VoiceChat.handleUserLeft", userId);
         });
@@ -156,7 +154,7 @@ public partial class VoiceChat: ChatBase
     [JSInvokable]
     public async Task SendAnswer(string targetId, string answer)
     {
-        Log.Debug("[C#] Отправка Answer к {targetId}");
+        Log.Debug("[C#] Отправка Answer к {targetId}", targetId);
         await hubConnection!.InvokeAsync("SendAnswerToUser", targetId, answer);
     }
     
