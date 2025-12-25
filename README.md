@@ -12,8 +12,12 @@ Key Features:
   
 - Content Moderation: Includes a message filtering and moderation system to prevent spam and censure inappropriate content.
 
-(the current, simplified UI)
-<img width="2546" height="1439" alt="image" src="https://github.com/user-attachments/assets/19dff6d2-8672-4292-9f80-f72d5046744c" />
+(the current message-chat UI)
+<img width="2560" height="1313" alt="image" src="https://github.com/user-attachments/assets/f25bef1b-5db8-4c63-994e-c49978a96e1c" />
+
+(the current voice-chat UI)
+<img width="2560" height="1320" alt="image" src="https://github.com/user-attachments/assets/e8f1f142-ed43-477d-8720-2c6645456fac" />
+
 
 ---
 
@@ -33,7 +37,7 @@ Key Features:
 
 - Matchmaking Algorithm: With parameters for gender preference and age range.
 
-- Voice Chat: Simple Voice Chat
+- Voice Chat: Implementation of voice communication functionality (noise reduction, volume control, auto-reconnection system, etc.).
 
 ---
 (how the matchmaking algorithm works)
@@ -45,18 +49,11 @@ Key Features:
   
 - Optional Registration: Adding sign-up with phone number or email binding (pending final approval).
   
-- Voice Chat: Implementation of voice communication functionality (noise reduction, volume control, auto-reconnection system, etc.).
-  
 - Web-Based Admin Panel: An integrated administration panel within the web client for convenient moderation commands.
   
 - Dedicated Info Pages: Creation of a separate page for rules of use and technical information.
   
-- Cryptography Upgrade: Potential transition to a different, robust algorithm (e.g., ChaCha20 + Diffie-Hellman + Digital Signature).
-
----
-
-(the final, intended ui, without backend)
-<img width="2541" height="1440" alt="image" src="https://github.com/user-attachments/assets/bf341293-0193-4b0c-8dda-1bc0c7d02bde" />
+- Cryptography Upgrade: Potential transition to a different, robust algorithm (e.g., ChaCha20 + EC-Diffie-Hellman + Digital Signature).
 
 ---
 
