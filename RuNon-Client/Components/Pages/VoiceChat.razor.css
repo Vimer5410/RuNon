@@ -1751,6 +1751,82 @@
         padding: 0.75rem 2rem;
         border-radius: 12px;
     }
+
+    /* Ползунок громкости */
+    .volume-control {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem 1.5rem;
+        background: rgba(15, 23, 42, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        min-width: 280px;
+    }
+
+    .volume-icon {
+        font-size: 1.2rem;
+        color: var(--primary-color);
+        transition: color 0.3s ease;
+    }
+
+    .volume-slider {
+        flex: 1;
+        height: 6px;
+        border-radius: 10px;
+        background: linear-gradient(to right,
+        rgba(99, 102, 241, 0.2) 0%,
+        var(--primary-color) var(--volume-percent, 100%),
+        rgba(255, 255, 255, 0.1) var(--volume-percent, 100%));
+        outline: none;
+        -webkit-appearance: none;
+        appearance: none;
+        cursor: pointer;
+    }
+
+    .volume-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(99, 102, 241, 0.5);
+        transition: all 0.2s ease;
+    }
+
+    .volume-slider::-webkit-slider-thumb:hover {
+        transform: scale(1.2);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.7);
+    }
+
+    .volume-slider::-moz-range-thumb {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 2px 8px rgba(99, 102, 241, 0.5);
+        transition: all 0.2s ease;
+    }
+
+    .volume-slider::-moz-range-thumb:hover {
+        transform: scale(1.2);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.7);
+    }
+
+    .volume-label {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #e2e8f0;
+        min-width: 45px;
+        text-align: right;
+    }
+    
+    /* Ползунок громкости */
     
     .voice-controls-panel {
         display: flex;

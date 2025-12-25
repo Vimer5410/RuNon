@@ -82,7 +82,7 @@
                 audio = document.createElement('audio');
                 audio.id = 'remote-audio';
                 audio.autoplay = true;
-                audio.controls = true;
+                audio.controls = false;
                 audio.volume = 1.0;
                 document.body.appendChild(audio);
                 console.log("[JS] Audio элемент создан и добавлен в DOM");
@@ -219,6 +219,13 @@
                 track.enabled = !isMuted;
                 console.log("[JS] Трек \"", track.kind, "\" ", track.enabled ? "ON" : "OFF");
             });
+        }
+    },
+
+    async setVolume(volume) {
+        const audio = document.getElementById('remote-audio');
+        if (audio) {
+            audio.volume = volume; // volume от 0.0 до 1.0
         }
     }
 };

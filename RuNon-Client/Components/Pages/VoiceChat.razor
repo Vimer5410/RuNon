@@ -227,6 +227,19 @@
         <i class="far fa-clock"></i>
         <span>@callTimer</span>
     </div>
+    
+    @* Ползунок громкости собеседника *@
+    <div class="volume-control">
+        <i class="fas fa-volume-up volume-icon"></i>
+        <input type="range" 
+               class="volume-slider" 
+               min="0" 
+               max="100" 
+               value="@partnerVolume"
+               @oninput="@(async (ChangeEventArgs e) => await OnVolumeChange(int.Parse(e.Value.ToString())))"
+               title="Громкость собеседника">
+        <span class="volume-label">@partnerVolume%</span>
+    </div>
 
     @* Элементы управления звонком *@
     <div class="voice-controls-panel">
@@ -374,6 +387,8 @@
     
     private string targetGender = "any";
     private int partnerAge = 16;
+
+    private int partnerVolume = 100;
     
     //матчмейкинг
 
@@ -483,6 +498,12 @@
         await JSRuntime.InvokeVoidAsync("VoiceChat.toggleMic", isLocalMicMuted);
     }
     
+    private async Task OnVolumeChange(int volume)
+    {
+        partnerVolume = volume;
+        double newVolume = volume / 100.0;
+        await JSRuntime.InvokeVoidAsync("VoiceChat.setVolume", newVolume);
+    }
     
     private async Task StartClock()
     {
