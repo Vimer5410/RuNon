@@ -10,7 +10,11 @@
 @rendermode InteractiveServer
 
 
-
+<head>
+    <link rel="icon" type="image/x-icon" href="images/favicon.png" />
+    <link rel="shortcut icon" type="image/x-icon" href="images/favicon.png" />
+    <title>Голосовой чат</title>
+</head>
 
 <div class="chat-container">
             @* Заголовок приложения *@
@@ -247,7 +251,6 @@
             <span>Завершить</span>
         </button>
     </div>
-    
 </div>
             
             }
@@ -353,11 +356,14 @@
 
 @code
 {
-    private bool isLocalSpeaking = true;
     
     // Состояние звонка
     private bool isLocalMicMuted = false; // Состояние микрофона пользователя
+    
+    // Для визуала
+    private bool isLocalSpeaking = false; // индикатор того, говорим ли мы
     private bool isPartnerSpeaking = false; // Индикатор, говорит ли собеседник
+    
     private DateTime now = Convert.ToDateTime(DateTime.Now.ToString("T")); // Таймер звонка
     private string callTimer;
     
@@ -473,10 +479,8 @@
     
     private async Task ToggleMicMute()
     {
-        isLocalSpeaking = false;
-        isPartnerSpeaking = true;
-        await Task.Delay(10000);
-        isPartnerSpeaking = false;
+        isLocalMicMuted = !isLocalMicMuted;
+        await JSRuntime.InvokeVoidAsync("VoiceChat.toggleMic", isLocalMicMuted);
     }
     
     

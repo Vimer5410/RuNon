@@ -20,9 +20,9 @@
     async leaveRoom() {
         console.log("[JS] Покидаю комнату");
 
-        if (this.connection) {
-            this.connection.close();
-            this.connection = null;
+        if (this.connections.length > 0) {
+            this.connections[0].close();
+            delete this.connections[0];
         }
 
         if (this.localStream) {
@@ -77,10 +77,10 @@
             console.log("[JS] Stream:", event.streams[0]);
             console.log("[JS] Track:", event.track);
 
-            let audio = document.getElementById('remote-audio-' + userId);
+            let audio = document.getElementById('remote-audio');
             if (!audio) {
                 audio = document.createElement('audio');
-                audio.id = 'remote-audio-' + userId;
+                audio.id = 'remote-audio';
                 audio.autoplay = true;
                 audio.controls = true;
                 audio.volume = 1.0;
@@ -206,9 +206,19 @@
             delete this.connections[userId];
         }
 
-        const audio = document.getElementById('remote-audio-' + userId);
+        const audio = document.getElementById('remote-audio');
         if (audio) {
             audio.remove();
+        }
+    },
+
+
+    async toggleMic(isMuted) {
+        if (this.localStream) {
+            this.localStream.getAudioTracks().forEach(track => {
+                track.enabled = !isMuted;
+                console.log("[JS] Трек \"", track.kind, "\" ", track.enabled ? "ON" : "OFF");
+            });
         }
     }
 };
