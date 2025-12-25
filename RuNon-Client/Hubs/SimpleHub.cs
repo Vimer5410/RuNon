@@ -13,6 +13,7 @@ public class SimpleHub : Hub
     private readonly EncryptionService _encryptionService;
     
     private static readonly ConcurrentDictionary<string, byte[]> _clientPublicKeys = new();
+    private static int usersOnline = 0;
     
     public SimpleHub(EncryptionService encryptionService)
     {
@@ -119,6 +120,7 @@ public class SimpleHub : Hub
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         Log.Information("[Hub] {Context.ConnectionId} отключился", Context.ConnectionId);
+        usersOnline--;
         await base.OnDisconnectedAsync(exception);
     }
 
@@ -127,6 +129,7 @@ public class SimpleHub : Hub
     public override Task OnConnectedAsync()
     {
         Log.Information("[Hub] {Context.ConnectionId} подключился", Context.ConnectionId);
+        usersOnline++;
         return base.OnConnectedAsync();
     }
     
@@ -134,6 +137,11 @@ public class SimpleHub : Hub
     public async Task NotifyOfLeave(string partnerConnectionId)
     {
         await Clients.Client(partnerConnectionId).SendAsync("LeaveFromRoom");
+    }
+
+    public async Task GetUsersOnline()
+    {
+        await Clients.Caller.SendAsync("ReceiveUsersOnline", usersOnline);
     }
 }
     

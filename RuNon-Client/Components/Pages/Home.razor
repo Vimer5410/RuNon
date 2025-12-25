@@ -20,38 +20,47 @@
             </div>
     
             @* статус подключения *@
-            <div class="status-card">
-                <div class="connection-status">
-                    @{
-                        var state = hubConnection?.State;
-                        
-                        string statusClass = state == HubConnectionState.Connected ? "status-connected" :
-                        state == HubConnectionState.Connecting ? "status-connecting" : "status-disconnected";
-                        
-                        string statusText = state == HubConnectionState.Connected ? "Подключен" :
-                        state == HubConnectionState.Connecting ? "Подключение..." : "Отключен";
-                        
-                        string statusIcon = state == HubConnectionState.Connected ? "fa-wifi" :
-                        state == HubConnectionState.Connecting ? "fa-spinner fa-spin" : "fa-wifi-slash";
-                    }
-                    <div class="status-indicator @statusClass"></div>
-                    <div class="status-info">
-                        <i class="fas @statusIcon"></i>
-                        <span>@statusText</span>
-                    </div>
-                </div>
-    
-                <div class="connection-info">
-                    <div class="connection-label">
-                        <i class="fas fa-id-card"></i>
-                        Ваш ID: <code class="connection-id">@(yourClientID ?? "Не подключен")</code>
-                    </div>
-                    @if (!string.IsNullOrEmpty(userIp))
-                    {
-                         <div style="font-size: 0.8em; color: #666; margin-top: 5px;">IP: @userIp</div>
-                    }
-                </div>
-            </div>
+   <div class="status-card" style="position: relative;">
+                   
+                   <div class="online-status-absolute">
+                       <span class="info-label">Сейчас общаются в чате : </span>
+                       <span class="online-count-value">@usersOnline</span>
+                   </div>
+               
+                   @{
+                       var state = hubConnection?.State;
+                       
+                       string statusClass = state == HubConnectionState.Connected ? "status-connected" :
+                       state == HubConnectionState.Connecting ? "status-connecting" : "status-disconnected";
+                       
+                       string statusText = state == HubConnectionState.Connected ? "Подключен" :
+                       state == HubConnectionState.Connecting ? "Подключение..." : "Отключен";
+                       
+                       string statusIcon = state == HubConnectionState.Connected ? "fa-wifi" :
+                       state == HubConnectionState.Connecting ? "fa-spinner fa-spin" : "fa-wifi-slash";
+                   }
+               
+                   <div class="connection-status">
+                       <div class="status-left-group">
+                           <div class="status-indicator @statusClass"></div>
+                           <div class="status-info">
+                               <i class="fas @statusIcon"></i>
+                               <span>@statusText</span>
+                           </div>
+                       </div>
+                   </div>
+               
+                   <div class="connection-info">
+                       <div class="connection-label">
+                           <i class="fas fa-id-card"></i>
+                           Ваш ID: <code class="connection-id">@(yourClientID ?? "Не подключен")</code>
+                       </div>
+                       @if (!string.IsNullOrEmpty(userIp))
+                       {
+                           <div style="font-size: 0.8em; color: #666; margin-top: 5px;">IP: @userIp</div>
+                       }
+                   </div>
+               </div>
     
             @* Основная сетка *@
     <div class="main-grid">
