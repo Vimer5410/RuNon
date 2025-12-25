@@ -9,8 +9,6 @@ public partial class VoiceChat: ChatBase
 {
     // из тестового войc чата
     private DotNetObjectReference<VoiceChat> dotNetRef;
-    private bool inRoom;
-    private bool isConnecting;
     private string errorMessage = "";
     private string roomId = "";
 
@@ -33,7 +31,6 @@ public partial class VoiceChat: ChatBase
         hubConnection.On<string>("UserJoined", async (userId) =>
         {
             Log.Debug("[C#] Пользователь присоединился: {userId}", userId);
-            participantCount++;
             await InvokeAsync(StateHasChanged);
             await JSRuntime.InvokeVoidAsync("VoiceChat.handleUserJoined", userId, dotNetRef);
         });
@@ -58,24 +55,24 @@ public partial class VoiceChat: ChatBase
                 
         hubConnection.On<string>("UserLeft", async (userId) =>
         {
-            Log.Debug("[C#] Пользователь вышел: {userId}");
-            participantCount = Math.Max(1, participantCount - 1);
+            Log.Debug("[C#] Пользователь вышел: {userId}", userId);
             await InvokeAsync(StateHasChanged);
             await JSRuntime.InvokeVoidAsync("VoiceChat.handleUserLeft", userId);
         });
-                
+
         Log.Information("[C#] Подключён к Hub! ID: {hubConnection.ConnectionId}",
             hubConnection.ConnectionId);
         
         StateHasChanged();
         await hubConnection.InvokeAsync("GetUserIp");
-        
+
     }
     
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
+            await UsersOnline();
             dotNetRef = DotNetObjectReference.Create(this);
             await Task.Delay(5000);
             Console.WriteLine($"После задержки, userIp = {userIp}");
@@ -98,7 +95,6 @@ public partial class VoiceChat: ChatBase
             return;
         }
         
-        isConnecting = true;
         errorMessage = "";
         StateHasChanged();
         
@@ -108,18 +104,12 @@ public partial class VoiceChat: ChatBase
             
             // Передаём dotNetRef в JS
             await JSRuntime.InvokeVoidAsync("VoiceChat.joinRoom", dotNetRef);
-            inRoom = true;
             Log.Debug("[C#] Успешно вошел в комнату!");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[C#] ОШИБКА входа в комнату: {ex.Message}");
             errorMessage = $"Не удалось войти в комнату: {ex.Message}";
-        }
-        finally
-        {
-            isConnecting = false;
-            StateHasChanged();
         }
     }
 
@@ -156,7 +146,7 @@ public partial class VoiceChat: ChatBase
     [JSInvokable]
     public async Task SendAnswer(string targetId, string answer)
     {
-        Log.Debug("[C#] Отправка Answer к {targetId}");
+        Log.Debug("[C#] Отправка Answer к {targetId}", targetId);
         await hubConnection!.InvokeAsync("SendAnswerToUser", targetId, answer);
     }
     

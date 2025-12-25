@@ -1636,4 +1636,43 @@
         font-size: 0.9rem;
         margin: 0;
     }
+    .connection-status {
+        display: flex;
+        align-items: center;
+        padding-bottom: 0;
+        margin-bottom: 10px;
+        border-bottom: none;
+    }
+
+    .status-left-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .online-status-absolute {
+        position: absolute;
+        top: 16px;
+        right: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        pointer-events: none;
+    }
+
+    .info-label {
+        font-size: 0.85rem;
+        color: #666;
+    }
+
+    .online-count-value {
+        font-family: 'JetBrains Mono', monospace;
+        color: #10b981;
+        font-weight: 700;
+    }
+
+
+    @keyframes mini-ping {
+        75%, 100% { transform: scale(3.5); opacity: 0; }
+    }
 }

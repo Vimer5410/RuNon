@@ -17,7 +17,7 @@
 </head>
 
 <div class="chat-container">
-    @* Заголовок приложения *@
+            @* Заголовок приложения *@
             <div class="header-section">
                 <h1 class="header-title">
                     <i class="fas fa-headset"></i> 
@@ -25,29 +25,38 @@
                 </h1>
                 <div class="header-subtitle">Найди собеседника по интересам</div>
             </div>
-    
+            
             @* статус подключения *@
-            <div class="status-card">
+            <div class="status-card" style="position: relative;">
+                
+                <div class="online-status-absolute">
+                    <span class="info-label">Сейчас общаются в чате : </span>
+                    <span class="online-count-value">@usersOnline</span>
+                </div>
+            
                 @{
-                        var state = hubConnection?.State;
-                        
-                        string statusClass = state == HubConnectionState.Connected ? "status-connected" :
-                        state == HubConnectionState.Connecting ? "status-connecting" : "status-disconnected";
-                        
-                        string statusText = state == HubConnectionState.Connected ? "Подключен" :
-                        state == HubConnectionState.Connecting ? "Подключение..." : "Отключен";
-                        
-                        string statusIcon = state == HubConnectionState.Connected ? "fa-wifi" :
-                        state == HubConnectionState.Connecting ? "fa-spinner fa-spin" : "fa-wifi-slash";
+                    var state = hubConnection?.State;
+                    
+                    string statusClass = state == HubConnectionState.Connected ? "status-connected" :
+                    state == HubConnectionState.Connecting ? "status-connecting" : "status-disconnected";
+                    
+                    string statusText = state == HubConnectionState.Connected ? "Подключен" :
+                    state == HubConnectionState.Connecting ? "Подключение..." : "Отключен";
+                    
+                    string statusIcon = state == HubConnectionState.Connected ? "fa-wifi" :
+                    state == HubConnectionState.Connecting ? "fa-spinner fa-spin" : "fa-wifi-slash";
                 }
+            
                 <div class="connection-status">
-                    <div class="status-indicator @statusClass"></div>
-                    <div class="status-info">
-                        <i class="fas @statusIcon"></i>
-                        <span>@statusText</span>
+                    <div class="status-left-group">
+                        <div class="status-indicator @statusClass"></div>
+                        <div class="status-info">
+                            <i class="fas @statusIcon"></i>
+                            <span>@statusText</span>
+                        </div>
                     </div>
                 </div>
-    
+            
                 <div class="connection-info">
                     <div class="connection-label">
                         <i class="fas fa-id-card"></i>
@@ -55,11 +64,10 @@
                     </div>
                     @if (!string.IsNullOrEmpty(userIp))
                     {
-                         <div style="font-size: 0.8em; color: #666; margin-top: 5px;">IP: @userIp</div>
+                        <div style="font-size: 0.8em; color: #666; margin-top: 5px;">IP: @userIp</div>
                     }
                 </div>
             </div>
-    
             @* Основная сетка *@
     <div class="main-grid">
         @* панель фильтров (Оставлена без изменений) *@
@@ -243,7 +251,6 @@
             <span>Завершить</span>
         </button>
     </div>
-    
 </div>
             
             }
@@ -349,12 +356,14 @@
 
 @code
 {
-    private bool isLocalSpeaking = true;
     
     // Состояние звонка
-    private bool isCallActive = false; // true, когда собеседник найден и звонок установлен
     private bool isLocalMicMuted = false; // Состояние микрофона пользователя
+    
+    // Для визуала
+    private bool isLocalSpeaking = false; // индикатор того, говорим ли мы
     private bool isPartnerSpeaking = false; // Индикатор, говорит ли собеседник
+    
     private DateTime now = Convert.ToDateTime(DateTime.Now.ToString("T")); // Таймер звонка
     private string callTimer;
     
@@ -432,9 +441,16 @@
             {
                 await hubConnection.InvokeAsync("NotifyOfLeave", interviewerClientID);
             }
+            
             interviewerClientID = null;
             isSearching = false;
-            await JSRuntime.InvokeVoidAsync("VoiceChat.leaveRoom");
+            
+            if (JSRuntime is not null)
+            {
+                try
+                {   await JSRuntime.InvokeVoidAsync("VoiceChat.leaveRoom"); }
+                catch { }
+            }
             StateHasChanged();
         }
         catch (Exception e)
@@ -457,20 +473,14 @@
                 dotNetRef?.Dispose();
             }
         }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw;
-        }
+        catch { }
         
     }
     
     private async Task ToggleMicMute()
     {
-        isLocalSpeaking = false;
-        isPartnerSpeaking = true;
-        await Task.Delay(10000);
-        isPartnerSpeaking = false;
+        isLocalMicMuted = !isLocalMicMuted;
+        await JSRuntime.InvokeVoidAsync("VoiceChat.toggleMic", isLocalMicMuted);
     }
     
     

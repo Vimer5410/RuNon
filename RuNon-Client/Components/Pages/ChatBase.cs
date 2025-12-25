@@ -21,6 +21,7 @@ public abstract class ChatBase:ComponentBase
     protected bool isUserBanned;
     protected bool ShowToast;
     protected string userIp = "";
+    protected int usersOnline = 0;
 
     
     List<TimeSpan> reconnectTime = new List<TimeSpan>();
@@ -65,12 +66,25 @@ public abstract class ChatBase:ComponentBase
                 });
             });
             
+            hubConnection.On<int>("ReceiveUsersOnline",(online) =>
+            {
+                InvokeAsync(() =>
+                {
+                    usersOnline = online;
+                });
+            });
+            
         }
         catch (Exception e)
         {
             Log.Fatal("[HUB] Ошибка: {e}", e);
             throw;
         }
+    }
+
+    protected async Task UsersOnline()
+    {
+        await hubConnection.InvokeAsync("GetUsersOnline");
     }
     
     // логика проверки забаненных пользователей

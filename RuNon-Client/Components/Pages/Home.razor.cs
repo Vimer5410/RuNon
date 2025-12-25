@@ -82,6 +82,7 @@ public partial class Home:ChatBase
     {
         if (firstRender)
         {
+            await UsersOnline();
             await Task.Delay(5000);
             Console.WriteLine($"После задержки, userIp = {userIp}");
             await CreateOrIdentify();
