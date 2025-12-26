@@ -1,5 +1,5 @@
 ﻿window.VoiceChat = {
-    connections: {},
+    connection: null,
     localStream: null,
 
     async joinRoom(dotNetRef) {
@@ -12,7 +12,7 @@
             await dotNetRef.invokeMethodAsync('JoinRoomOnServer');
 
         } catch (error) {
-            console.error("[JS] ОШИБКА получения микрофона:", error);
+            console.error("[JS] Не удалось получить доступ к микрофону:", error);
             alert("Не удалось получить доступ к микрофону!");
         }
     },
@@ -20,9 +20,9 @@
     async leaveRoom() {
         console.log("[JS] Покидаю комнату");
 
-        if (this.connections.length > 0) {
-            this.connections[0].close();
-            delete this.connections[0];
+        if (this.connection) {
+            this.connection.close();
+            delete this.connection;
         }
 
         if (this.localStream) {
@@ -38,8 +38,6 @@
             audio.remove();
             console.log("[JS] Audio элемент удалён");
         }
-
-        this.remoteUserId = null;
     },
     
     async createConnectionForUser(userId, dotNetRef) {
@@ -69,7 +67,7 @@
 
         this.localStream.getTracks().forEach(track => {
             pc.addTrack(track, this.localStream);
-            console.log("[JS] Трек добавлен:", track.kind);
+            console.log("[JS] Трек добавлен");
         });
 
         pc.ontrack = async (event) => {
@@ -96,53 +94,40 @@
 
             try {
                 await audio.play();
-                console.log("[JS] ✅ Аудио ВОСПРОИЗВОДИТСЯ!");
             } catch (error) {
-                console.error("[JS] ❌ ОШИБКА воспроизведения:", error);
+                console.error("[JS] Ошибка воспроизведения аудио:", error);
                 alert("Нажмите OK чтобы разрешить воспроизведение аудио");
                 try {
                     await audio.play();
-                    console.log("[JS] ✅ Аудио воспроизводится после разрешения");
+                    console.log("[JS] Аудио воспроизводится после разрешения");
                 } catch (e) {
-                    console.error("[JS] ❌ Всё ещё не работает:", e);
+                    console.error("[JS] Ошибка воспроизведения аудио:", e);
                 }
             }
         };
 
         pc.onicecandidate = async (event) => {
             if (event.candidate) {
-                console.log("[JS] 📡 ICE candidate:", event.candidate.type, event.candidate.protocol);
+                console.log("[JS] ICE candidate:", event.candidate.type, event.candidate.protocol);
                 await dotNetRef.invokeMethodAsync('SendIce', userId, JSON.stringify(event.candidate));
             } else {
-                console.log("[JS] ✅ Все ICE candidates отправлены");
+                console.log("[JS] Все ICE кандидаты отправлены");
             }
         };
 
         pc.oniceconnectionstatechange = () => {
-            console.log("[JS] 🔌 ICE connection state:", pc.iceConnectionState);
-            if (pc.iceConnectionState === 'failed') {
-                console.error("[JS] ❌ ICE соединение провалилось! Возможно нужен TURN сервер.");
-            }
-            if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
-                console.log("[JS] ✅ ICE соединение установлено!");
-            }
+            console.log("[JS] ICE connection state:", pc.iceConnectionState);
         };
 
         pc.onconnectionstatechange = () => {
-            console.log("[JS] 🔗 Connection state:", pc.connectionState);
-            if (pc.connectionState === 'failed') {
-                console.error("[JS] ❌ WebRTC соединение провалилось!");
-            }
-            if (pc.connectionState === 'connected') {
-                console.log("[JS] ✅ WebRTC соединение установлено!");
-            }
+            console.log("[JS] Connection state:", pc.connectionState);
         };
 
         pc.onicegatheringstatechange = () => {
             console.log("[JS] ICE gathering state:", pc.iceGatheringState);
         };
 
-        this.connections[userId] = pc;
+        this.connection = pc;
         return pc;
     },
 
@@ -167,19 +152,18 @@
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
 
-        console.log("[JS] 📤 Отправка answer");
+        console.log("[JS] Отправка answer");
         await dotNetRef.invokeMethodAsync('SendAnswer', fromUserId, JSON.stringify(answer));
     },
 
     async handleAnswer(answerJson, fromUserId, dotNetRef) {
-        console.log("[JS] 📥 Получен answer");
+        console.log("[JS] Получен answer");
 
         const answer = JSON.parse(answerJson);
 
-        const connections = Object.values(this.connections);
-        if (connections.length > 0) {
-            await connections[0].setRemoteDescription(answer);
-            console.log("[JS] ✅ Answer установлен");
+        if (this.connection) {
+            await this.connection.setRemoteDescription(answer);
+            console.debug("[JS] setRemoteDescription установлен");
         }
     },
 
@@ -188,22 +172,20 @@
 
         const candidate = JSON.parse(candidateJson);
 
-        for (const pc of Object.values(this.connections)) {
-            try {
-                await pc.addIceCandidate(candidate);
-                console.log("[JS] ✅ ICE candidate добавлен");
-            } catch (e) {
-                console.log("[JS] ⚠️ Не удалось добавить ICE:", e.message);
-            }
+        try {
+            await this.connection.addIceCandidate(candidate);
+            console.log("[JS] ICE candidate добавлен");
+        } catch (e) {
+            console.warn("[JS] Не удалось добавить ICE:", e.message);
         }
     },
 
     async handleUserLeft(userId) {
         console.log("[JS]  Пользователь вышел:", userId);
 
-        if (this.connections[userId]) {
-            this.connections[userId].close();
-            delete this.connections[userId];
+        if (this.connection) {
+            this.connection.close();
+            delete this.connection;
         }
 
         const audio = document.getElementById('remote-audio');
@@ -217,7 +199,7 @@
         if (this.localStream) {
             this.localStream.getAudioTracks().forEach(track => {
                 track.enabled = !isMuted;
-                console.log("[JS] Трек \"", track.kind, "\" ", track.enabled ? "ON" : "OFF");
+                console.info("[JS] Микрофон", track.enabled ? "включен" : "выключен");
             });
         }
     },
@@ -225,7 +207,8 @@
     async setVolume(volume) {
         const audio = document.getElementById('remote-audio');
         if (audio) {
-            audio.volume = volume; // volume от 0.0 до 1.0
+            audio.volume = volume;
+            console.info("[JS] Громкость собеседника:", volume);
         }
     }
 };
